@@ -1,0 +1,272 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+enum UserRole {
+  OWNER
+  STAFF
+}
+
+enum PartnerRole {
+  SELLER
+  CUSTOMER
+}
+
+enum Units {
+  KILOGRAM
+  PIECE
+  LITER
+  METER
+}
+
+enum PaymentType {
+  CASH
+  CARD
+}
+
+enum Type {
+  IN
+  OUT
+}
+
+model User {
+  id           String @id @default(uuid())
+  fullName     String
+  phoneNumber  String @unique
+  email        String @unique
+  password     String
+  image        String
+  isActive     Boolean
+  balance      Int
+  role         UserRole
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  partners     Partner[]
+  products     Product[]
+  purchases    Purchase[]
+  contracts    Contract[]
+  payments     Payment[]
+  salaries     Salary[]
+  productActionHistories   ProductActionHistory[]
+}
+
+
+
+
+model Partner {
+  id           String @id @default(uuid())
+  fullname     String
+  phoneNumber  String @unique
+  email        String @unique
+  address      String
+  isActive     Boolean
+  balance      Int
+  role         PartnerRole
+  userId       String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  user         User @relation(fields: [userId], references: [id])
+
+  purchases    Purchase[]
+  contracts    Contract[]
+  payments     Payment[]
+
+}
+
+
+
+
+model Category {
+  id           String @id @default(uuid())
+  name         String 
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  products     Product[]
+}
+
+
+
+
+model Product {
+  id           String @id @default(uuid())
+  name         String 
+  sellPrice    Int
+  buyPrice     Int 
+  quantity     Int
+  unit         Units
+  isActive     Boolean
+  description  String
+  comment      String
+  userId       String
+  categoryId   String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  user         User @relation(fields: [userId], references: [id])
+  category     Category @relation(fields: [categoryId], references: [id])
+
+  purchases                Purchase[]
+  productImages            ProductImage[]
+  contracts                Contract[]
+  productActionHistories   ProductActionHistory[]
+}
+
+
+
+
+model  ProductImage {
+  id           String @id @default(uuid())
+  image        String
+  productId    String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  product      Product @relation(fields: [productId], references: [id])
+}
+
+ 
+
+
+
+model Purchase {
+  id         String @id @default(uuid()) 
+  quantity   Int
+  buyPrice   Int
+  comment    String
+  userId     String
+  partnerId   String
+  productId  String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  user       User @relation(fields: [userId], references: [id])
+  partner    Partner @relation(fields: [partnerId], references: [id])
+  product    Product @relation(fields: [productId], references: [id])
+
+}
+
+
+model Contract {
+  id                String @id @default(uuid()) 
+  quantity          Int
+  sellPrice         Int
+  repaymentPeriod   Int
+  productId         String
+  partnerId         String
+  userId            String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  user       User @relation(fields: [userId], references: [id])
+  partner    Partner @relation(fields: [partnerId], references: [id])
+  product    Product @relation(fields: [productId], references: [id])
+
+  debts      Debt[]
+  returns    ProductReturn[]              
+
+}
+
+
+
+model Debt {
+  id                String @id @default(uuid()) 
+  total             Int
+  repaymentPeriod   Int
+  contractId        String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  contract    Contract @relation(fields: [contractId], references: [id])
+
+  payments   Payment[]
+}
+
+
+model Reason {
+  id                String @id @default(uuid()) 
+  reasonText        String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  returns           ProductReturn[]
+
+}
+
+
+model ProductReturn {
+  id                String @id @default(uuid()) 
+  isNew             Boolean
+  contractId        String
+  reasonId          String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  reason            Reason @relation(fields: [reasonId], references: [id])
+  contract          Contract @relation(fields: [contractId], references: [id])
+}
+
+
+model Payment {
+  id                String @id @default(uuid()) 
+  amount            Int
+  comment           String
+  paymentType       PaymentType
+  type              Type
+  partnerId         String
+  debtId            String
+  userId            String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  debt          Debt @relation(fields: [debtId], references: [id])
+  partner       Partner @relation(fields: [partnerId], references: [id])
+  user          User @relation(fields: [userId], references: [id])
+}
+
+
+
+model Salary {
+  id                String @id @default(uuid()) 
+  amount            Int
+  comment           String
+  userId            String
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime?
+
+  user          User @relation(fields: [userId], references: [id])
+}
+
+
+
+model ProductActionHistory {
+  id           String @id @default(uuid()) 
+  productId    String
+  actionType   String
+  sourceTable  String?
+  recordId     String?
+  oldValue     Json?
+  newValue     Json?
+  comment      String?
+  userId       String?
+  createdAt    DateTime   @default(now())
+
+  product      Product    @relation(fields: [productId], references: [id])
+  user         User?      @relation(fields: [userId], references: [id])
+}
