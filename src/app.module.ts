@@ -10,9 +10,10 @@ import { ProductImageModule } from './product-image/product-image.module';
 import { ProductActionHistoryModule } from './product-action-history/product-action-history.module';
 import { PurchaseModule } from './purchase/purchase.module';
 import { ContractModule } from './contract/contract.module';
+import { DebtModule } from './debt/debt.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, ProductActionHistoryModule, PurchaseModule, ContractModule],
+  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, ProductActionHistoryModule, PurchaseModule, ContractModule, DebtModule],
   controllers: [AppController],
   providers: [AppService],
 })
