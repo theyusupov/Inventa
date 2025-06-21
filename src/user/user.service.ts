@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto, loginDto, RegisterDto, SendotpDto, verifyOtpDto } from './dto/create-user.dto';
+import { CreateUserDto, loginDto, newPasswordDto, otps, RegisterDto, SendotpDto, verifyOtpDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GenerateOtp } from 'src/shared/generateOtp';
@@ -11,13 +11,8 @@ import * as path from 'path';
 import  * as fs  from 'fs/promises';
 dotenv.config()
 
+let otpVerifiedUsers : Record<string, boolean> = {}
 let windowStore : {[key:string]:string} = {};
-
-interface OtpResponse {
-  message: string;
-}
-
-
 
 @Injectable()
 export class UserService {
@@ -146,38 +141,69 @@ export class UserService {
     }
   }
 
-async sendOtpToResetPassword(userId: string) {
-  console.log(userId);
-  
-  const isUserExist = await this.prisma.user.findFirst({ where: { id: userId } });
+  async sendOtpToResetPassword(userId: string) {
+    const isUserExist = await this.prisma.user.findFirst({ where: { id: userId } });
 
-  if (!isUserExist) {
-    throw new BadRequestException("User not found");
+    if (!isUserExist) {
+      throw new BadRequestException("User not found");
+    }
+
+    const otp = GenerateOtp();
+    const email = isUserExist.email;
+
+    windowStore[email] = otp;
+
+    setTimeout(() => {
+      delete windowStore[email];
+    }, 10 * 60 * 1000);
+
+    const options = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Your OTP to reset password",
+      text: `Verify this OTP to reset your password: ${otp}`
+    };
+
+    try {
+      await this.transporter.sendMail(options);
+      return { message: "Check your email and verify OTP." };
+    } catch (error) {
+      throw new BadRequestException("Something went wrong!");
+    }
   }
 
-  const otp = GenerateOtp();
-  const email = isUserExist.email;
+  async verifyOtpToReset(data: otps, userId: string) {
+    const { otp } = data;
 
-  windowStore[email] = otp;
+    const isUserExists = await this.prisma.user.findFirst({ where: { id: userId } });
+    if (!isUserExists) throw new BadRequestException("User not found!");
 
-  setTimeout(() => {
-    delete windowStore[email];
-  }, 10 * 60 * 1000);
+    const email = isUserExists.email;
 
-  const options = {
-    from: process.env.EMAIL,
-    to: email,
-    subject: "Your OTP to reset password",
-    text: `Verify this OTP to reset your password: ${otp}`
-  };
+    if (windowStore[email] === otp) {
+      delete windowStore[email];
+      otpVerifiedUsers[userId] = true;
+      return { message: "OTP verified successfully, now you can reset your password!" };
+    }
 
-  try {
-    await this.transporter.sendMail(options);
-    return { message: "Check your email and verify OTP." }; // ✅ to'g'ri format
-  } catch (error) {
-    throw new BadRequestException("Something went wrong!");
+    return { error: "Wrong OTP!" };
   }
-}
+
+  async resetPassword(data:newPasswordDto, userId:string){
+    let {newPassword} = data;
+    if (!otpVerifiedUsers[userId]) {
+      throw new BadRequestException("You are not allowed to reset password without OTP verification!");
+    }
+    try {
+      let hash = bcrypt.hashSync(newPassword, 10)      
+      await this.prisma.user.update({where:{id:userId}, data:{password:hash}});
+      delete otpVerifiedUsers[userId]
+      return {Success:"Your password has been successfully changed!"}
+    } catch (error) {
+      throw new BadRequestException({error:error.message})
+    }
+
+  }
 
     
 }

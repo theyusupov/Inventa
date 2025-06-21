@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards, Request } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto, loginDto, RegisterDto, SendotpDto, verifyOtpDto } from './dto/create-user.dto';
+import { CreateUserDto, loginDto, newPasswordDto, otps, RegisterDto, SendotpDto, verifyOtpDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { multerUploadUserImage } from 'src/shared/multer';
-// import { JwtAuthGuard } from 'src/shared/token.guard';
+// import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 // import { JwtRoleGuard } from 'src/shared/role.guard';
 // import { Roles } from 'src/shared/role.decorator';
 
@@ -79,12 +79,30 @@ export class UserController {
     return this.userService.remove(id);
   }
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
+
   // @Roles([UserRole.OWNER,UserRole.STAFF])
-  @Post("/send-otp/reset")
+  // @UseGuards(JwtAuthGuard)
+  @Post("/send-otp-reset")
   sendResetOtp(@Request() req) {
-    // const userId:string = req.user.id;
-    return this.userService.sendOtpToResetPassword(req.user.id);
+    const userId = req.user.id;
+    return this.userService.sendOtpToResetPassword(userId);
   }
+
+
+  // @Roles([UserRole.OWNER,UserRole.STAFF])
+  // @UseGuards(JwtAuthGuard)
+  @Post('/verify-otp-reset')
+  verifyResetOtp(@Request() req, @Body() body: otps) {
+    const userId = req.user.id;
+    return this.userService.verifyOtpToReset(body, userId);
+  }
+
+  // @Roles([UserRole.OWNER,UserRole.STAFF])
+  // @UseGuards(JwtAuthGuard)
+  @Patch('reset-password')
+  resetPassword(@Request() req, @Body() data:newPasswordDto){
+    let userId = req.user.id;
+    return this.userService.resetPassword(data, userId)
+  } 
 
 }

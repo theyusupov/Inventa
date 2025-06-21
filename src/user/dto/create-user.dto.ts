@@ -82,3 +82,14 @@ export class CreateUserDto {
   @IsString()
   image: string; 
 }
+
+export class otps {
+  @IsString()
+  otp:string
+}
+
+export class newPasswordDto{
+  @IsNotEmpty()
+  newPassword: string;
+}
+  
