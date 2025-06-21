@@ -176,7 +176,6 @@ model Contract {
 
   debts      Debt[]
   returns    ProductReturn[]              
-
 }
 
 
