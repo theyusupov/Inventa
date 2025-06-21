@@ -25,5 +25,5 @@ export class CreatePartnerDto {
   role: PartnerRole;
 
   @IsString()
-  userId: string;
+  userId?: string;
 }

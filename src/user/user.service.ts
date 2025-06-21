@@ -94,7 +94,7 @@ export class UserService {
     if(!comparedPassword){
       return {Error:"Wrong password!"}
     }
-    let token = this.Jwt.sign({role: IsEmailVerified.role, id: IsEmailVerified})
+    let token = this.Jwt.sign({role: IsEmailVerified.role, id: IsEmailVerified.id})
     return {token}
   }
 

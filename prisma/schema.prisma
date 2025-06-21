@@ -76,11 +76,11 @@ model Partner {
   isActive     Boolean
   balance      Int
   role         PartnerRole
-  userId       String
+  userId       String?
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user         User @relation(fields: [userId], references: [id])
+  user         User? @relation(fields: [userId], references: [id])
 
   purchases    Purchase[]
   contracts    Contract[]
@@ -113,12 +113,12 @@ model Product {
   isActive     Boolean
   description  String
   comment      String
-  userId       String
+  userId       String?
   categoryId   String
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user         User @relation(fields: [userId], references: [id])
+  user         User? @relation(fields: [userId], references: [id])
   category     Category @relation(fields: [categoryId], references: [id])
 
   purchases                Purchase[]
@@ -146,13 +146,13 @@ model Purchase {
   quantity   Int
   buyPrice   Int
   comment    String
-  userId     String
-  partnerId   String
+  userId     String?
+  partnerId  String
   productId  String
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user       User @relation(fields: [userId], references: [id])
+  user       User? @relation(fields: [userId], references: [id])
   partner    Partner @relation(fields: [partnerId], references: [id])
   product    Product @relation(fields: [productId], references: [id])
 
@@ -166,11 +166,11 @@ model Contract {
   repaymentPeriod   Int
   productId         String
   partnerId         String
-  userId            String
+  userId            String?
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user       User @relation(fields: [userId], references: [id])
+  user       User? @relation(fields: [userId], references: [id])
   partner    Partner @relation(fields: [partnerId], references: [id])
   product    Product @relation(fields: [productId], references: [id])
 
@@ -227,13 +227,13 @@ model Payment {
   type              Type
   partnerId         String
   debtId            String
-  userId            String
+  userId            String?
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
   debt          Debt @relation(fields: [debtId], references: [id])
   partner       Partner @relation(fields: [partnerId], references: [id])
-  user          User @relation(fields: [userId], references: [id])
+  user          User? @relation(fields: [userId], references: [id])
 }
 
 
@@ -242,11 +242,11 @@ model Salary {
   id                String @id @default(uuid()) 
   amount            Int
   comment           String
-  userId            String
+  userId            String?
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user          User @relation(fields: [userId], references: [id])
+  user          User? @relation(fields: [userId], references: [id])
 }
 
 

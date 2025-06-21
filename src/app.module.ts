@@ -7,9 +7,10 @@ import { PartnerModule } from './partner/partner.module';
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { ProductImageModule } from './product-image/product-image.module';
+import { ProductActionHistoryModule } from './product-action-history/product-action-history.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule],
+  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, ProductActionHistoryModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -28,8 +28,5 @@ export class CreateProductDto {
   comment: string;
 
   @IsString()
-  userId: string;
-
-  @IsString()
   categoryId: string;
 }
