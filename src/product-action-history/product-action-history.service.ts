@@ -6,23 +6,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class ProductActionHistoryService {
   constructor(readonly prisma:PrismaService){}
-  create(createProductActionHistoryDto: CreateProductActionHistoryDto) {
-    return 'This action adds a new productActionHistory';
+  async findAll() {
+    return await this.prisma.productActionHistory.findMany();
   }
 
-  findAll() {
-    return this.prisma.productActionHistory.findMany();
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} productActionHistory`;
-  }
-
-  update(id: number, updateProductActionHistoryDto: UpdateProductActionHistoryDto) {
-    return `This action updates a #${id} productActionHistory`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} productActionHistory`;
+  async remove(id: string) {
+    return await this.prisma.productActionHistory.delete({where:{id}});
   }
 }
