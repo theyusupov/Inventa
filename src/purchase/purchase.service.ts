@@ -1,0 +1,37 @@
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreatePurchaseDto } from './dto/create-purchase.dto';
+
+@Injectable()
+export class PurchaseService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createPurchaseDto: CreatePurchaseDto, userId:string) {
+    const { productId, partnerId } = createPurchaseDto;
+
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) throw new BadRequestException('Product not found');
+
+    const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
+    if (!partner) throw new BadRequestException('Partner not found');
+
+    const purchase = await this.prisma.purchase.create({
+      data: {...createPurchaseDto, userId},
+    });
+
+    return { message: 'Purchase created successfully' };
+  }
+
+  async findAll() {
+    return this.prisma.purchase.findMany({ include: { product: true, partner: true } });
+  }
+
+  async findOne(id: string) {
+    return this.prisma.purchase.findUnique({ where: { id } });
+  }
+
+  async remove(id: string) {
+    await this.prisma.purchase.delete({ where: { id } });
+    return { message: 'Purchase deleted successfully' };
+  }
+}

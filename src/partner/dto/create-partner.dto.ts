@@ -5,7 +5,7 @@ import { PartnerRole } from 'generated/prisma';
 export class CreatePartnerDto {
   @IsString()
   @IsNotEmpty()
-  fullname: string;
+  fullName: string;
 
   @IsString()
   @IsNotEmpty()
@@ -23,7 +23,4 @@ export class CreatePartnerDto {
 
   @IsEnum(PartnerRole)
   role: PartnerRole;
-
-  @IsString()
-  userId?: string;
 }

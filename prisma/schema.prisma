@@ -70,7 +70,7 @@ model User {
 
 model Partner {
   id           String @id @default(uuid())
-  fullname     String
+  fullName     String
   phoneNumber  String @unique
   address      String
   isActive     Boolean

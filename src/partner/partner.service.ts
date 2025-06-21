@@ -7,9 +7,9 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class PartnerService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createPartnerDto: CreatePartnerDto) {
+  async create(createPartnerDto: CreatePartnerDto, userId:string) {
     const partner = await this.prisma.partner.create({
-      data: createPartnerDto,
+      data: {...createPartnerDto, userId},
     });
     return { message: 'Partner created successfully'};
   }

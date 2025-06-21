@@ -1,15 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete,} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards,} from '@nestjs/common';
 import { PartnerService } from './partner.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
+import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 
 @Controller('partner')
 export class PartnerController {
   constructor(private readonly partnerService: PartnerService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createPartnerDto: CreatePartnerDto) {
-    return this.partnerService.create(createPartnerDto);
+  create(@Body() createPartnerDto: CreatePartnerDto, @Request() req) {
+    let userId = req.user.id
+    return this.partnerService.create(createPartnerDto, userId);
   }
 
   @Get()
