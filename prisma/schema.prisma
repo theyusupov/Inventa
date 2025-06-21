@@ -72,7 +72,6 @@ model Partner {
   id           String @id @default(uuid())
   fullname     String
   phoneNumber  String @unique
-  email        String @unique
   address      String
   isActive     Boolean
   balance      Int

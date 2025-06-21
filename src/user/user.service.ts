@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto, loginDto, RegisterDto, SendotpDto, verifyOtpDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -48,7 +48,7 @@ export class UserService {
       await this.transporter.sendMail(options)
 
       await this.prisma.user.create({data:{fullName:"", phoneNumber:"", password:"", image:"", isActive:false, balance:0, role:"STAFF", email }})
-      return {message:"Successfully"}
+      return {message:"Otp sent uccessfully"}
     } catch (error) {
       console.log({error});
       throw error
@@ -82,7 +82,7 @@ export class UserService {
       image:createUserDto.image, 
       password: hashedPassword,
     }})
-    return {createdData};
+    return {message:"Registered successfully"};
   }
 
   async login(data:loginDto){
@@ -99,13 +99,16 @@ export class UserService {
   }
 
   async findAll() {
-    let allData = await this.prisma.user.findMany()
-    return ({allData});
+    return await this.prisma.user.findMany()
+ 
   }
 
   async findOne(id: string) {
     let oneData = await this.prisma.user.findFirst({where:{id:id}})
-    return {oneData};
+      if (!oneData) {
+        throw new NotFoundException('User not found');
+    }
+    return oneData
   }
 
   async updateImage(id: string, image: Express.Multer.File){
@@ -125,7 +128,7 @@ export class UserService {
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     let updatedData = await this.prisma.user.update({where:{id},data:updateUserDto})
-    return {updatedData};
+    return {message:"User updated successfully"}
   }
 
   async remove(id: string) {
@@ -137,10 +140,44 @@ export class UserService {
     try {
       fs.unlink(filePath)
       await this.prisma.user.delete({where:{id}})
-      return {message:"Deleted successfully"};
+      return {message:"User deleted successfully"};
     } catch (error) {
       throw new BadRequestException("Something went wrong")
     }
   }
 
+async sendOtpToResetPassword(userId: string) {
+  console.log(userId);
+  
+  const isUserExist = await this.prisma.user.findFirst({ where: { id: userId } });
+
+  if (!isUserExist) {
+    throw new BadRequestException("User not found");
+  }
+
+  const otp = GenerateOtp();
+  const email = isUserExist.email;
+
+  windowStore[email] = otp;
+
+  setTimeout(() => {
+    delete windowStore[email];
+  }, 10 * 60 * 1000);
+
+  const options = {
+    from: process.env.EMAIL,
+    to: email,
+    subject: "Your OTP to reset password",
+    text: `Verify this OTP to reset your password: ${otp}`
+  };
+
+  try {
+    await this.transporter.sendMail(options);
+    return { message: "Check your email and verify OTP." }; // ✅ to'g'ri format
+  } catch (error) {
+    throw new BadRequestException("Something went wrong!");
+  }
+}
+
+    
 }
