@@ -3,12 +3,7 @@ import { UserService } from './user.service';
 import { CreateUserDto, loginDto, RegisterDto, SendotpDto, verifyOtpDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-// import { multerUploadUserImage } from 'src/shared/multer';
 import { Express } from 'express';
-import { JwtAuthGuard } from 'src/shared/guards/token.guard';
-import { JwtRoleGuard } from 'src/shared/guards/role.guard';
-import { UserRole } from 'generated/prisma';
-import { Roles } from 'src/shared/guards/role.decorator';
 import { multerUploadUserImage } from 'src/shared/multer';
 // import { JwtAuthGuard } from 'src/shared/token.guard';
 // import { JwtRoleGuard } from 'src/shared/role.guard';
@@ -84,7 +79,8 @@ export class UserController {
     return this.userService.remove(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  // @Roles([UserRole.OWNER,UserRole.STAFF])
   @Post("/send-otp/reset")
   sendResetOtp(@Request() req) {
     // const userId:string = req.user.id;
