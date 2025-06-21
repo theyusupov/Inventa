@@ -15,12 +15,7 @@ export class ProductService {
   }
 
   async findAll() {
-    return await this.prisma.product.findMany({
-      include: {
-        category: true,
-        user: true,
-      },
-    });
+    return await this.prisma.product.findMany();
   }
 
   async findOne(id: string) {
