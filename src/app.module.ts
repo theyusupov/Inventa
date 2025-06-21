@@ -11,9 +11,10 @@ import { ProductActionHistoryModule } from './product-action-history/product-act
 import { PurchaseModule } from './purchase/purchase.module';
 import { ContractModule } from './contract/contract.module';
 import { DebtModule } from './debt/debt.module';
+import { ReasonModule } from './reason/reason.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, ProductActionHistoryModule, PurchaseModule, ContractModule, DebtModule],
+  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, ProductActionHistoryModule, PurchaseModule, ContractModule, DebtModule, ReasonModule],
   controllers: [AppController],
   providers: [AppService],
 })
