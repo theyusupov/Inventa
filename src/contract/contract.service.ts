@@ -34,7 +34,7 @@ export class ContractService {
     let debt = await this.prisma.debt.create({
       data: {
         total: totalDebt,
-        repaymentPeriod: dto.repaymentPeriod,
+        remainingMonths: dto.repaymentPeriod,
         contractId: contract.id
       },
     });

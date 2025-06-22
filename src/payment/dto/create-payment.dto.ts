@@ -17,6 +17,9 @@ export class CreatePaymentDto {
   @IsString()
   partnerId: string;
 
+  @IsInt()
+  monthsPaid: number
+
   @IsString()
   debtId: string;
 }

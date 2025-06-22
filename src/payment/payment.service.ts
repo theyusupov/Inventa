@@ -14,9 +14,11 @@ export class PaymentService {
     const payment = await this.prisma.payment.create({
       data: { ...dto, userId },
     });
-
+    const remainingMonths = debt.remainingMonths ?? 0;
+    const monthsPaid = payment.monthsPaid ?? 0;
+    const newRemainingMonths = remainingMonths - monthsPaid;
     const newTotal = debt.total - payment.amount;
-    await this.prisma.debt.update({ where: { id: payment.debtId }, data: { total: newTotal } });
+    await this.prisma.debt.update({ where: { id: payment.debtId }, data: { total: newTotal, remainingMonths: newRemainingMonths} });
 
     await this.prisma.actionHistory.create({
       data: {
@@ -28,6 +30,11 @@ export class PaymentService {
         comment: 'Payment created and debt updated',
       },
     });
+
+    const contractCheck = await this.prisma.debt.findFirst({ where: { id: dto.debtId } });
+    if (contractCheck?.remainingMonths===0&&contractCheck?.total===0){
+      await this.prisma.contract.update({where:{id:debt.contractId},data:{status:"COMPLETED"}})
+    }
 
     return { message: 'Payment created successfully' };
   }
