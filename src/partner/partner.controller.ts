@@ -2,16 +2,17 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards,}
 import { PartnerService } from './partner.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
-// import { JwtAuthGuard } from 'src/shared/token.guard';
-// import { JwtRoleGuard } from 'src/shared/role.guard';
+import { JwtAuthGuard } from 'src/shared/guards/token.guard';
+import { JwtRoleGuard } from 'src/shared/guards/role.guard';
 // import { Roles } from 'src/shared/role.decorator';
 
 @Controller('partner')
 export class PartnerController {
   constructor(private readonly partnerService: PartnerService) {}
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF])  @Post()
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  // @Roles([UserRole.STAFF]) 
+   @Post()
   create(@Body() createPartnerDto: CreatePartnerDto, @Request() req) {
     let userId = req.user.id
     return this.partnerService.create(createPartnerDto, userId);

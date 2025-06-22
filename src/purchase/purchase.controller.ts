@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Param, Delete, Body, UseGuards, Request } from '@nestjs/common';
 import { PurchaseService } from './purchase.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
+import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 // import { JwtAuthGuard } from 'src/shared/token.guard';
 // import { JwtRoleGuard } from 'src/shared/role.guard';
 // import { Roles } from 'src/shared/role.decorator';
@@ -9,8 +10,9 @@ import { CreatePurchaseDto } from './dto/create-purchase.dto';
 export class PurchaseController {
   constructor(private readonly purchaseService: PurchaseService) {}
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF])  @Post()
+  @UseGuards(JwtAuthGuard)
+  // @Roles([UserRole.STAFF])  
+  @Post()
   create(@Body() dto: CreatePurchaseDto, @Request() req) {
     let userId = req.user.id
     return this.purchaseService.create(dto, userId);

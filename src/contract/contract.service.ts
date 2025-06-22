@@ -19,7 +19,16 @@ export class ContractService {
     const contract = await this.prisma.contract.create({
       data: {
         ...dto,
+        sellPrice: product.sellPrice,
         userId,
+      },
+    });
+
+      const debt = await this.prisma.debt.create({
+      data: {
+        total: product.sellPrice,
+        repaymentPeriod: dto.repaymentPeriod,
+        contractId: contract.id
       },
     });
 

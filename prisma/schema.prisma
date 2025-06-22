@@ -47,6 +47,17 @@ enum Type {
   OUT
 }
 
+
+enum ActionType {
+  CREATE
+  UPDATE
+  DELETE
+  RETURNED
+  PAYMENT
+  LOGIN
+  RESET_PASSWORD
+}
+
 model User {
   id           String @id @default(uuid())
   fullName     String
@@ -66,7 +77,7 @@ model User {
   contracts    Contract[]
   payments     Payment[]
   salaries     Salary[]
-  productActionHistories   ProductActionHistory[]
+  productActionHistories  ActionHistory[]
 }
 
 
@@ -128,7 +139,6 @@ model Product {
   purchases                Purchase[]
   productImages            ProductImage[]
   contracts                Contract[]
-  productActionHistories   ProductActionHistory[]
 }
 
 
@@ -254,18 +264,16 @@ model Salary {
 
 
 
-model ProductActionHistory {
-  id           String @id @default(uuid()) 
-  productId    String
-  actionType   String
-  sourceTable  String?
-  recordId     String?
-  oldValue     Json?
-  newValue     Json?
-  comment      String?
-  userId       String?
-  createdAt    DateTime   @default(now())
+model ActionHistory {
+  id           String      @id @default(uuid())
+  tableName    String                     
+  recordId     String                     
+  actionType   ActionType                 
+  userId       String?                    
+  oldValue     Json?                       
+  newValue     Json?                       
+  comment      String?                     
+  createdAt    DateTime    @default(now())
 
-  product      Product    @relation(fields: [productId], references: [id])
-  user         User?      @relation(fields: [userId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
 }

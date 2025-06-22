@@ -2,7 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards} 
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-// import { JwtRoleGuard } from 'src/shared/guards/role.guard';
+import { JwtRoleGuard } from 'src/shared/guards/role.guard';
+import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 // import { Roles } from 'src/shared/guards/role.decorator';
 // import { UserRole } from 'generated/prisma';
 
@@ -10,8 +11,9 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF])  @Post()
+  @UseGuards(JwtAuthGuard)
+  // @Roles([UserRole.STAFF]) 
+   @Post()
   create(@Body() dto: CreateProductDto, @Request() req) {
     let userId = req.user.id
     return this.productService.create(dto, userId);
@@ -32,15 +34,17 @@ export class ProductController {
   }
 
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF])  @Patch(':id')
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  // @Roles([UserRole.STAFF]) 
+   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Request() req) {
     let userId = req.user.id
     return this.productService.update(id, dto, userId);
   }
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF])  @Delete(':id')
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  // @Roles([UserRole.STAFF])  
+  @Delete(':id')
   remove(@Param('id') id: string,  @Request() req) {
     let userId = req.user.id
     return this.productService.remove(id, userId);

@@ -2,7 +2,7 @@ import { Controller, Post, Get, Param, Delete, Body, UseGuards, Request, Patch }
 import { ContractService } from './contract.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
-// import { JwtAuthGuard } from 'src/shared/token.guard';
+import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 // import { JwtRoleGuard } from 'src/shared/role.guard';
 // import { Roles } from 'src/shared/role.decorator';
 
@@ -10,7 +10,7 @@ import { UpdateContractDto } from './dto/update-contract.dto';
 export class ContractController {
   constructor(private readonly contractService: ContractService) {}
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @UseGuards(JwtAuthGuard)
   // @Roles([UserRole.STAFF])
   @Post()
   create(@Body() dto: CreateContractDto, @Request() req) {

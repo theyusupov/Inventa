@@ -5,7 +5,7 @@ export class CreateContractDto {
   quantity: number;
 
   @IsInt()
-  sellPrice: number;
+  sellPrice?: number;
 
   @IsInt()
   repaymentPeriod: number; 

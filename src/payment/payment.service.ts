@@ -8,9 +8,13 @@ export class PaymentService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreatePaymentDto, userId: string) {
+    let debt = await this.prisma.debt.findFirst({where:{id:dto.debtId}})
+    if(!debt) throw new BadRequestException("Debt not found")
     const payment = await this.prisma.payment.create({
       data: { ...dto, userId },
     });
+    const newTotal = debt.total-payment.amount
+    await this.prisma.debt.update({where:{id:payment.debtId}, data:{total:newTotal}});
     return { message: 'Payment created successfully'};
   }
 
