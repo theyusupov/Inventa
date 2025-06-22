@@ -16,7 +16,7 @@ export class PurchaseService {
     if (!partner) throw new BadRequestException('Partner not found');
 
     const purchase = await this.prisma.purchase.create({
-      data: { ...createPurchaseDto, buyPrice:product.buyPrice, quantity:product.quantity, userId },
+      data: { ...createPurchaseDto, buyPrice:createPurchaseDto.buyPrice || product.buyPrice, quantity: createPurchaseDto.quantity || product.quantity, userId },
     });
 
   await this.prisma.actionHistory.create({

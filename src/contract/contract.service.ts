@@ -27,7 +27,12 @@ export class ContractService {
       },
     });
 
+    let purchase = await this.prisma.purchase.findFirst({ where: { productId: product.id}});
+    if (!purchase) throw new BadRequestException('Purchase not found');
+
     await this.prisma.product.update({ where: { id: productId }, data:{quantity: product.quantity-dto.quantity} });
+    await this.prisma.purchase.update({ where: { id: purchase.id }, data:{quantity: product.quantity-dto.quantity} });
+
 
 
     let totalDebt = product.sellPrice * dto.quantity
