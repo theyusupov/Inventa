@@ -14,9 +14,10 @@ import { ReasonModule } from './reason/reason.module';
 import { ProductReturnModule } from './product-return/product-return.module';
 import { PaymentModule } from './payment/payment.module';
 import { SalaryModule } from './salary/salary.module';
+import { ActionHistoryModule } from './action-history/action-history.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, PurchaseModule, ContractModule, DebtModule, ReasonModule, ProductReturnModule, PaymentModule, SalaryModule],
+  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, PurchaseModule, ContractModule, DebtModule, ReasonModule, ProductReturnModule, PaymentModule, SalaryModule, ActionHistoryModule],
   controllers: [AppController],
   providers: [AppService],
 })

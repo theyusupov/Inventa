@@ -1,4 +1,5 @@
-import { IsString, IsInt } from 'class-validator';
+import { IsString, IsInt, IsEnum } from 'class-validator';
+import { ContractStatus } from 'generated/prisma';
 
 export class CreateContractDto {
   @IsInt()
@@ -15,4 +16,7 @@ export class CreateContractDto {
 
   @IsString()
   partnerId: string;
+
+  @IsEnum(ContractStatus)
+  status? : ContractStatus
 }

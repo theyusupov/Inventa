@@ -5,7 +5,7 @@ export class CreatePurchaseDto {
   quantity: number;
 
   @IsInt()
-  buyPrice: number;
+  buyPrice?: number;
 
   @IsString()
   comment: string;

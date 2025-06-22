@@ -16,17 +16,24 @@ export class ContractService {
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
+    if(product.quantity<dto.quantity) throw new BadRequestException('Quantity of product not enough');
+
     const contract = await this.prisma.contract.create({
       data: {
         ...dto,
         sellPrice: product.sellPrice,
         userId,
+        status:'ONGOING'
       },
     });
 
-    await this.prisma.debt.create({
+    await this.prisma.product.update({ where: { id: productId }, data:{quantity: product.quantity-dto.quantity} });
+
+
+    let totalDebt = product.sellPrice * dto.quantity
+    let debt = await this.prisma.debt.create({
       data: {
-        total: product.sellPrice,
+        total: totalDebt,
         repaymentPeriod: dto.repaymentPeriod,
         contractId: contract.id
       },
@@ -39,6 +46,17 @@ export class ContractService {
         recordId: contract.id,
         newValue: contract,
         comment: 'Contract created',
+        userId,
+      }
+    });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'debt',
+        actionType: 'CREATE',
+        recordId: debt.id,
+        newValue: debt,
+        comment: 'Debt created',
         userId,
       }
     });

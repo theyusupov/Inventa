@@ -59,6 +59,14 @@ enum ActionType {
   RESET_PASSWORD
 }
 
+
+enum ContractStatus {
+  ONGOING       
+  CANCELLED      
+  COMPLETED      
+}
+
+
 model User {
   id           String @id @default(uuid())
   fullName     String
@@ -80,6 +88,9 @@ model User {
   salaries     Salary[]
   productActionHistories  ActionHistory[]
 }
+
+
+
 
 
 
@@ -182,8 +193,10 @@ model Contract {
   productId         String
   partnerId         String
   userId            String?
+  status       ContractStatus?
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
+ 
 
   user       User? @relation(fields: [userId], references: [id])
   partner    Partner @relation(fields: [partnerId], references: [id])

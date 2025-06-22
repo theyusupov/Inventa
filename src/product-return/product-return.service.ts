@@ -47,6 +47,19 @@ export class ProductReturnService {
       },
     });
 
+    await this.prisma.product.update({where:{id:contract.productId},data:{quantity:product.quantity+contract.quantity}})
+    await this.prisma.contract.update({where:{id:dto.contractId},data:{status:"CANCELLED"}});
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'contract',
+        recordId: contract.id,
+        actionType: 'DELETE',
+        oldValue: contract,
+        comment: 'Contract canceled because of cutomer return product',
+        userId,
+      },
+    });
+
     return { message: 'Product return recorded successfully' };
   }
 
