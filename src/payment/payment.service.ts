@@ -8,14 +8,28 @@ export class PaymentService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreatePaymentDto, userId: string) {
-    let debt = await this.prisma.debt.findFirst({where:{id:dto.debtId}})
-    if(!debt) throw new BadRequestException("Debt not found")
+    const debt = await this.prisma.debt.findFirst({ where: { id: dto.debtId } });
+    if (!debt) throw new BadRequestException("Debt not found");
+
     const payment = await this.prisma.payment.create({
       data: { ...dto, userId },
     });
-    const newTotal = debt.total-payment.amount
-    await this.prisma.debt.update({where:{id:payment.debtId}, data:{total:newTotal}});
-    return { message: 'Payment created successfully'};
+
+    const newTotal = debt.total - payment.amount;
+    await this.prisma.debt.update({ where: { id: payment.debtId }, data: { total: newTotal } });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'payment',
+        actionType: 'CREATE',
+        recordId: payment.id,
+        newValue: payment,
+        userId,
+        comment: 'Payment created and debt updated',
+      },
+    });
+
+    return { message: 'Payment created successfully' };
   }
 
   async findAll() {
@@ -34,7 +48,7 @@ export class PaymentService {
     return payment;
   }
 
-  async update(id: string, dto: UpdatePaymentDto) {
+  async update(id: string, dto: UpdatePaymentDto, userId: string) {
     const existing = await this.prisma.payment.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Payment not found');
 
@@ -43,12 +57,37 @@ export class PaymentService {
       data: dto,
     });
 
-    return { message: 'Payment updated successfully'};
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'payment',
+        actionType: 'UPDATE',
+        recordId: id,
+        oldValue: existing,
+        newValue: updated,
+        userId,
+        comment: 'Payment updated',
+      },
+    });
+
+    return { message: 'Payment updated successfully' };
   }
 
-  async remove(id: string) {
-    await this.findOne(id); 
+  async remove(id: string, userId: string) {
+    const existing = await this.findOne(id);
+
     await this.prisma.payment.delete({ where: { id } });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'payment',
+        actionType: 'DELETE',
+        recordId: id,
+        oldValue: existing,
+        userId,
+        comment: 'Payment deleted',
+      },
+    });
+
     return { message: 'Payment deleted successfully' };
   }
 }

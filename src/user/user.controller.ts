@@ -5,9 +5,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { multerUploadUserImage } from 'src/shared/multer';
-// import { JwtAuthGuard } from 'src/shared/guards/token.guard';
-// import { JwtRoleGuard } from 'src/shared/role.guard';
-// import { Roles } from 'src/shared/role.decorator';
+import { Roles } from 'src/shared/guards/role.decorator';
+import { UserRole } from 'generated/prisma';
+import { JwtAuthGuard } from 'src/shared/guards/token.guard';
+import { JwtRoleGuard } from 'src/shared/guards/role.guard';
+
 
 @Controller('user')
 export class UserController {
@@ -51,37 +53,37 @@ export class UserController {
     return this.userService.login(data)
   }
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF])
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER,UserRole.STAFF])
   @Get()
   findAll() {
     return this.userService.findAll();
   }
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.OWNER])
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER,UserRole.STAFF])
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.userService.findOne(id);
   }
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.OWNER,UserRole.STAFF])
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER,UserRole.STAFF])
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(id, updateUserDto);
   }
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.OWNER,UserRole.STAFF])
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER,UserRole.STAFF])
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
 
 
-  // @Roles([UserRole.OWNER,UserRole.STAFF])
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER,UserRole.STAFF])
   @Post("/send-otp-reset")
   sendResetOtp(@Request() req) {
     const userId = req.user.id;
@@ -89,16 +91,16 @@ export class UserController {
   }
 
 
-  // @Roles([UserRole.OWNER,UserRole.STAFF])
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER,UserRole.STAFF])
   @Post('/verify-otp-reset')
   verifyResetOtp(@Request() req, @Body() body: otps) {
     const userId = req.user.id;
     return this.userService.verifyOtpToReset(body, userId);
   }
 
-  // @Roles([UserRole.OWNER,UserRole.STAFF])
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER,UserRole.STAFF])
   @Patch('reset-password')
   resetPassword(@Request() req, @Body() data:newPasswordDto){
     let userId = req.user.id;

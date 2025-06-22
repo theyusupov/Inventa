@@ -1,158 +1,47 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto, loginDto, newPasswordDto, otps, RegisterDto, SendotpDto, verifyOtpDto } from './dto/create-user.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  CreateUserDto,
+  loginDto,
+  newPasswordDto,
+  otps,
+  RegisterDto,
+  SendotpDto,
+  verifyOtpDto,
+} from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GenerateOtp } from 'src/shared/generateOtp';
-import * as nodemailer from 'nodemailer'
-import * as dotenv from 'dotenv'
-import * as bcrypt from 'bcrypt'
+import * as nodemailer from 'nodemailer';
+import * as dotenv from 'dotenv';
+import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import * as path from 'path';
-import  * as fs  from 'fs/promises';
-dotenv.config()
+import * as fs from 'fs/promises';
+dotenv.config();
 
-let otpVerifiedUsers : Record<string, boolean> = {}
-let windowStore : {[key:string]:string} = {};
+let otpVerifiedUsers: Record<string, boolean> = {};
+let windowStore: { [key: string]: string } = {};
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService, private readonly Jwt: JwtService) {}
+  constructor( private readonly prisma: PrismaService, private readonly Jwt: JwtService,){}
 
   private transporter = nodemailer.createTransport({
-    service:"gmail",
-    auth:{
+    service: 'gmail',
+    auth: {
       user: process.env.EMAIL,
-      pass: process.env.PASSWORD
-    }
-  })
+      pass: process.env.PASSWORD,
+    },
+  });
 
-  async sendOtp(data: SendotpDto): Promise<{message: string}> {    
+  async sendOtp(data: SendotpDto): Promise<{ message: string }> {
     const { email } = data;
     const otp = GenerateOtp();
     windowStore[email] = otp;
-    setTimeout(()=>{
-      delete windowStore[email]}, 10*60*1000)
-    
-    let options = {
-      from : process.env.EMAIL,
-      to : email,
-      subject: 'Your otp code',
-      text: `Your OTP: ${otp}`
-    }
-    try {
-      await this.transporter.sendMail(options)
-
-      await this.prisma.user.create({data:{fullName:"", phoneNumber:"", password:"", image:"", isActive:false, balance:0, role:"STAFF", email }})
-      return {message:"Otp sent uccessfully"}
-    } catch (error) {
-      console.log({error});
-      throw error
-      
-    }
-  }
-
-  async verifyOtp(data: verifyOtpDto) {
-    const { otp, email } = data;
-    let sentOtp = windowStore[email];
-    
-    if (otp === sentOtp) {
-      delete windowStore[email]; 
-      await this.prisma.user.update({where:{email},data:{isActive:true}})
-      return {message: "OTP verified successfully" };
-    } else {
-      return {message: "Invalid OTP" };
-    }
-  }
-
-  async register(createUserDto: RegisterDto) {
-    let isVerified = await this.prisma.user.findFirst({where:{email:createUserDto.email}})
-    if(!isVerified){
-      return {Error:"This email is not verified yet"}
-    }
-
-    let hashedPassword = await bcrypt.hash(createUserDto.password, 10)
-    let createdData = await this.prisma.user.update({where:{email:createUserDto.email},data:{
-      fullName:createUserDto.fullName, 
-      phoneNumber: createUserDto.phoneNumber,
-      image:createUserDto.image, 
-      password: hashedPassword,
-    }})
-    return {message:"Registered successfully"};
-  }
-
-  async login(data:loginDto){
-    let IsEmailVerified = await this.prisma.user.findFirst({where:{email:data.email}})
-    if(!IsEmailVerified){
-      return {Error:"This email is not registered yet"}
-    }
-    let comparedPassword = bcrypt.compareSync(data.password, IsEmailVerified.password);
-    if(!comparedPassword){
-      return {Error:"Wrong password!"}
-    }
-    let token = this.Jwt.sign({role: IsEmailVerified.role, id: IsEmailVerified.id})
-    return {token}
-  }
-
-  async findAll() {
-    return await this.prisma.user.findMany()
- 
-  }
-
-  async findOne(id: string) {
-    let oneData = await this.prisma.user.findFirst({where:{id:id}})
-      if (!oneData) {
-        throw new NotFoundException('User not found');
-    }
-    return oneData
-  }
-
-  async updateImage(id: string, image: Express.Multer.File){
-    let isUserExist = await this.prisma.user.findFirst({where:{id}})
-    if(!isUserExist||!isUserExist.image){
-      throw new BadRequestException("User not found or image does not exist for this user")
-    }
-    let filePath = path.join(__dirname,"../../userImage",isUserExist.image)
-      try {
-    await fs.unlink(filePath); 
-  } catch (err) {
-    console.warn('Old image not found or already deleted:', err.message);
-  }
-    await this.prisma.user.update({where:{id}, data:{image:image.filename}})
-    return {message:"Image updated successfully"}
-  }
-
-  async update(id: string, updateUserDto: UpdateUserDto) {
-    let updatedData = await this.prisma.user.update({where:{id},data:updateUserDto})
-    return {message:"User updated successfully"}
-  }
-
-  async remove(id: string) {
-    let isUserExist = await this.prisma.user.delete({where:{id}})
-    if(!isUserExist){
-      throw new BadRequestException("Not found")
-    }
-    let filePath = path.join(__dirname, "../../userImage", isUserExist.image)
-    try {
-      fs.unlink(filePath)
-      await this.prisma.user.delete({where:{id}})
-      return {message:"User deleted successfully"};
-    } catch (error) {
-      throw new BadRequestException("Something went wrong")
-    }
-  }
-
-  async sendOtpToResetPassword(userId: string) {
-    const isUserExist = await this.prisma.user.findFirst({ where: { id: userId } });
-
-    if (!isUserExist) {
-      throw new BadRequestException("User not found");
-    }
-
-    const otp = GenerateOtp();
-    const email = isUserExist.email;
-
-    windowStore[email] = otp;
-
     setTimeout(() => {
       delete windowStore[email];
     }, 10 * 60 * 1000);
@@ -160,50 +49,294 @@ export class UserService {
     const options = {
       from: process.env.EMAIL,
       to: email,
-      subject: "Your OTP to reset password",
-      text: `Verify this OTP to reset your password: ${otp}`
+      subject: 'Your otp code',
+      text: `Your OTP: ${otp}`,
     };
 
     try {
       await this.transporter.sendMail(options);
-      return { message: "Check your email and verify OTP." };
+      const user = await this.prisma.user.create({
+        data: {
+          fullName: '',
+          phoneNumber: '',
+          password: '',
+          image: '',
+          isActive: false,
+          balance: 0,
+          role: 'STAFF',
+          email,
+        },
+      });
+
+      await this.prisma.actionHistory.create({
+        data: {
+          tableName: 'user',
+          recordId: user.id,
+          actionType: 'CREATE',
+          comment: 'OTP sent to email for registration',
+        },
+      });
+
+      return { message: 'Otp sent successfully' };
     } catch (error) {
-      throw new BadRequestException("Something went wrong!");
+      console.log({ error });
+      throw error;
     }
+  }
+
+  async verifyOtp(data: verifyOtpDto) {
+    const { otp, email } = data;
+    const sentOtp = windowStore[email];
+
+    if (otp === sentOtp) {
+      delete windowStore[email];
+      const updated = await this.prisma.user.update({
+        where: { email },
+        data: { isActive: true },
+      });
+
+      await this.prisma.actionHistory.create({
+        data: {
+          tableName: 'user',
+          recordId: updated.id,
+          actionType: 'CREATE',
+          comment: 'OTP verified for registration',
+        },
+      });
+
+      return { message: 'OTP verified successfully' };
+    }
+
+    return { message: 'Invalid OTP' };
+  }
+
+  async register(createUserDto: RegisterDto) {
+    const isVerified = await this.prisma.user.findFirst({
+      where: { email: createUserDto.email },
+    });
+    if (!isVerified) return { Error: 'This email is not verified yet' };
+
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const user = await this.prisma.user.update({
+      where: { email: createUserDto.email },
+      data: {
+        fullName: createUserDto.fullName,
+        phoneNumber: createUserDto.phoneNumber,
+        image: createUserDto.image,
+        password: hashedPassword,
+      },
+    });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'user',
+        recordId: user.id,
+        actionType: 'CREATE',
+        userId: user.id,
+        newValue: user,
+        comment: 'User registered',
+      },
+    });
+
+    return { message: 'Registered successfully' };
+  }
+
+  async login(data: loginDto) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: data.email },
+    });
+    if (!user) return { Error: 'This email is not registered yet' };
+
+    const isValid = bcrypt.compareSync(data.password, user.password);
+    if (!isValid) return { Error: 'Wrong password!' };
+
+    const token = this.Jwt.sign({ role: user.role, id: user.id });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'user',
+        recordId: user.id,
+        actionType: 'LOGIN',
+        userId: user.id,
+        comment: 'User logged in',
+      },
+    });
+
+    return { token };
+  }
+
+  async findAll() {
+    return this.prisma.user.findMany();
+  }
+
+  async findOne(id: string) {
+    const user = await this.prisma.user.findFirst({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async updateImage(id: string, image: Express.Multer.File) {
+    const user = await this.prisma.user.findFirst({ where: { id } });
+    if (!user || !user.image)
+      throw new BadRequestException('User not found or no image');
+
+    const filePath = path.join(__dirname, '../../userImage', user.image);
+    try {
+      await fs.unlink(filePath);
+    } catch {}
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { image: image.filename },
+    });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'user',
+        recordId: id,
+        actionType: 'UPDATE',
+        userId: id,
+        oldValue: user,
+        newValue: updated,
+        comment: 'User image updated',
+      },
+    });
+
+    return { message: 'Image updated successfully' };
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if(!existing) throw new BadRequestException("Not found user")
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+    });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'user',
+        recordId: id,
+        actionType: 'UPDATE',
+        userId: id,
+        oldValue: existing,
+        newValue: updated,
+        comment: 'User updated',
+      },
+    });
+
+    return { message: 'User updated successfully' };
+  }
+
+  async remove(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new BadRequestException('Not found');
+
+    const filePath = path.join(__dirname, '../../userImage', user.image);
+    try {
+      await fs.unlink(filePath);
+    } catch {}
+
+    await this.prisma.user.delete({ where: { id } });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'user',
+        recordId: id,
+        actionType: 'DELETE',
+        userId: id,
+        oldValue: user,
+        comment: 'User deleted',
+      },
+    });
+
+    return { message: 'User deleted successfully' };
+  }
+
+  async sendOtpToResetPassword(userId: string) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    const otp = GenerateOtp();
+    const email = user.email;
+    windowStore[email] = otp;
+
+    setTimeout(() => {
+      delete windowStore[email];
+    }, 10 * 60 * 1000);
+
+    await this.transporter.sendMail({
+      from: process.env.EMAIL,
+      to: email,
+      subject: 'Your OTP to reset password',
+      text: `Verify this OTP to reset your password: ${otp}`,
+    });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'user',
+        recordId: user.id,
+        actionType: 'RESET_PASSWORD',
+        userId: user.id,
+        comment: 'OTP sent for password reset',
+      },
+    });
+
+    return { message: 'Check your email and verify OTP.' };
   }
 
   async verifyOtpToReset(data: otps, userId: string) {
     const { otp } = data;
+    const user = await this.prisma.user.findFirst({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found!');
 
-    const isUserExists = await this.prisma.user.findFirst({ where: { id: userId } });
-    if (!isUserExists) throw new BadRequestException("User not found!");
-
-    const email = isUserExists.email;
-
+    const email = user.email;
     if (windowStore[email] === otp) {
       delete windowStore[email];
       otpVerifiedUsers[userId] = true;
-      return { message: "OTP verified successfully, now you can reset your password!" };
+
+      await this.prisma.actionHistory.create({
+        data: {
+          tableName: 'user',
+          recordId: userId,
+          actionType: "RESET_PASSWORD",
+          userId,
+          comment: 'OTP verified for password reset',
+        },
+      });
+
+      return {
+        message: 'OTP verified successfully, now you can reset your password!',
+      };
     }
 
-    return { error: "Wrong OTP!" };
+    return { error: 'Wrong OTP!' };
   }
 
-  async resetPassword(data:newPasswordDto, userId:string){
-    let {newPassword} = data;
-    if (!otpVerifiedUsers[userId]) {
-      throw new BadRequestException("You are not allowed to reset password without OTP verification!");
-    }
-    try {
-      let hash = bcrypt.hashSync(newPassword, 10)      
-      await this.prisma.user.update({where:{id:userId}, data:{password:hash}});
-      delete otpVerifiedUsers[userId]
-      return {Success:"Your password has been successfully changed!"}
-    } catch (error) {
-      throw new BadRequestException({error:error.message})
-    }
+  async resetPassword(data: newPasswordDto, userId: string) {
+    const { newPassword } = data;
+    if (!otpVerifiedUsers[userId])
+      throw new BadRequestException(
+        'You are not allowed to reset password without OTP verification!',
+      );
 
+    const hash = bcrypt.hashSync(newPassword, 10);
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hash },
+    });
+    delete otpVerifiedUsers[userId];
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'user',
+        recordId: userId,
+        actionType: 'RESET_PASSWORD',
+        userId,
+        comment: 'Password reset successfully',
+      },
+    });
+
+    return { Success: 'Your password has been successfully changed!' };
   }
-
-    
 }

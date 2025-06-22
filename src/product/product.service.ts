@@ -21,15 +21,14 @@ export class ProductService {
       },
     });
 
-    await this.prisma.productActionHistory.create({
+    await this.prisma.actionHistory.create({
       data: {
-        productId: product.id,
-        actionType: 'CREATE',
-        sourceTable: 'product',
+        tableName: 'product',
         recordId: product.id,
+        actionType: 'CREATE',
         newValue: product,
-        comment: 'Product created',
         userId,
+        comment: 'Product created',
       },
     });
 
@@ -43,52 +42,53 @@ export class ProductService {
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { category: true, user: true, productImages:true},
+      include: { category: true, user: true, productImages: true },
     });
     if (!product) throw new NotFoundException('Product not found');
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto, userId:string) {
+  async update(id: string, updateProductDto: UpdateProductDto, userId: string) {
     const oldProduct = await this.prisma.product.findUnique({ where: { id } });
+    if (!oldProduct) throw new NotFoundException('Product not found');
 
     const product = await this.prisma.product.update({
       where: { id },
       data: updateProductDto,
     });
 
-    await this.prisma.productActionHistory.create({
+    await this.prisma.actionHistory.create({
       data: {
-        productId: product.id,
-        actionType: "UPDATE",
-        sourceTable: "product",
-        recordId: product.id,
-        oldValue: {oldProduct},          
-        newValue: product,             
-        comment: "Product updated",
-              
+        tableName: 'product',
+        recordId: id,
+        actionType: 'UPDATE',
+        oldValue: oldProduct,
+        newValue: product,
+        userId,
+        comment: 'Product updated',
       },
     });
 
     return { message: 'Product updated successfully' };
   }
 
-  async remove(id: string, userId:string) {
-    let oldData = await this.prisma.product.findUnique({where:{id}})
-    if(!oldData) throw new BadRequestException("Not found")
-    await this.prisma.product.delete({ where: { id:oldData.id } });
-    await this.prisma.productActionHistory.create({
+  async remove(id: string, userId: string) {
+    const oldData = await this.prisma.product.findUnique({ where: { id } });
+    if (!oldData) throw new BadRequestException('Product not found');
+
+    await this.prisma.product.delete({ where: { id } });
+
+    await this.prisma.actionHistory.create({
       data: {
-        productId: oldData.id,
-        actionType: "DELETE",
-        sourceTable: "product",
-        recordId: oldData.id,
-        oldValue: oldData,                      
-        comment: "Product delete",
-        userId
-              
+        tableName: 'product',
+        recordId: id,
+        actionType: 'DELETE',
+        oldValue: oldData,
+        userId,
+        comment: 'Product deleted',
       },
     });
-       return { message: 'Product deleted successfully' };
+
+    return { message: 'Product deleted successfully' };
   }
 }

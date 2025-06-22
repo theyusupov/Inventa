@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 
@@ -6,7 +6,7 @@ import { CreatePurchaseDto } from './dto/create-purchase.dto';
 export class PurchaseService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createPurchaseDto: CreatePurchaseDto, userId:string) {
+  async create(createPurchaseDto: CreatePurchaseDto, userId: string) {
     const { productId, partnerId } = createPurchaseDto;
 
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
@@ -16,10 +16,20 @@ export class PurchaseService {
     if (!partner) throw new BadRequestException('Partner not found');
 
     const purchase = await this.prisma.purchase.create({
-      data: {...createPurchaseDto, userId},
+      data: { ...createPurchaseDto, userId },
     });
 
-    return { message: 'Purchase created successfully' };
+  await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'purchase',
+        recordId: purchase.id,
+        actionType: 'CREATE',
+        userId,
+        newValue: purchase,
+        comment: 'Purchase created',
+      },
+  });
+  return { message: 'Purchase created successfully' };
   }
 
   async findAll() {
@@ -30,8 +40,23 @@ export class PurchaseService {
     return this.prisma.purchase.findUnique({ where: { id } });
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
+    const oldPurchase = await this.prisma.purchase.findUnique({ where: { id } });
+    if (!oldPurchase) throw new NotFoundException('Purchase not found');
+
     await this.prisma.purchase.delete({ where: { id } });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'purchase',
+        recordId: oldPurchase.id,
+        actionType: 'DELETE',
+        userId,
+        oldValue: oldPurchase,
+        comment: 'Purchase deleted',
+      },
+    });
+
     return { message: 'Purchase deleted successfully' };
   }
 }

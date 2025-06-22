@@ -49,6 +49,7 @@ enum Type {
 
 
 enum ActionType {
+  REJECT
   CREATE
   UPDATE
   DELETE

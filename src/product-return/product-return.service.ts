@@ -7,48 +7,46 @@ import { UpdateProductReturnDto } from './dto/update-product-return.dto';
 export class ProductReturnService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateProductReturnDto, userId:string) {
+  async create(dto: CreateProductReturnDto, userId: string) {
     const contract = await this.prisma.contract.findUnique({ where: { id: dto.contractId } });
     if (!contract) throw new BadRequestException('Contract not found');
 
-    var product = await this.prisma.product.findFirst({where:{id:contract.productId}})
-    if(!product) throw new BadRequestException("Went wrong!")
+    const product = await this.prisma.product.findUnique({ where: { id: contract.productId } });
+    if (!product) throw new BadRequestException('Product not found');
 
     const reason = await this.prisma.reason.findUnique({ where: { id: dto.reasonId } });
     if (!reason) throw new BadRequestException('Reason not found');
 
-    if(!dto.isNew===true){ 
-      await this.prisma.productActionHistory.create({
+    if (!dto.isNew) {
+      await this.prisma.actionHistory.create({
+        data: {
+          tableName: 'productReturn',
+          recordId: product.id,
+          actionType: 'REJECT',
+          oldValue: product,
+          comment: 'Attempted to return used product',
+          userId,
+        },
+      });
+      throw new BadRequestException('Sorry, we cannot accept used products!');
+    }
+
+    const productReturn = await this.prisma.productReturn.create({
+      data: dto,
+    });
+
+    await this.prisma.actionHistory.create({
       data: {
-        productId: product.id,
-        actionType: 'TRIED TO RETURN',
-        sourceTable: 'product-return',
-        recordId: product.id,
-        oldValue: product,
-        newValue: product,
-        comment: 'Product not returned',
+        tableName: 'productReturn',
+        recordId: productReturn.id,
+        actionType: 'CREATE',
+        oldValue: undefined,
+        newValue: productReturn,
+        comment: 'Product returned successfully',
         userId,
       },
     });
-      throw new BadRequestException("Sorry, we cannot accept used products!")}
 
-
-      const productReturn = await this.prisma.productReturn.create({
-        data: dto,
-      });
-
-      await this.prisma.productActionHistory.create({
-      data: {
-        productId: product.id,
-        actionType: 'RETURN',
-        sourceTable: 'product-return',
-        recordId: product.id,
-        oldValue: product,
-        newValue: product,
-        comment: 'Product returned',
-        userId,
-      },
-    })
     return { message: 'Product return recorded successfully' };
   }
 
@@ -71,7 +69,7 @@ export class ProductReturnService {
     });
   }
 
-  async update(id: string, dto: UpdateProductReturnDto) {
+  async update(id: string, dto: UpdateProductReturnDto, userId: string) {
     const existing = await this.prisma.productReturn.findUnique({ where: { id } });
     if (!existing) throw new BadRequestException('Product return not found');
 
@@ -83,11 +81,38 @@ export class ProductReturnService {
       },
     });
 
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'productReturn',
+        recordId: id,
+        actionType: 'UPDATE',
+        oldValue: existing,
+        newValue: updated,
+        comment: 'Product return updated',
+        userId,
+      },
+    });
+
     return { message: 'Product return updated successfully' };
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
+    const existing = await this.prisma.productReturn.findUnique({ where: { id } });
+    if (!existing) throw new BadRequestException('Product return not found');
+
     await this.prisma.productReturn.delete({ where: { id } });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'productReturn',
+        recordId: id,
+        actionType: 'DELETE',
+        oldValue: existing,
+        comment: 'Product return deleted',
+        userId,
+      },
+    });
+
     return { message: 'Product return deleted successfully' };
   }
 }

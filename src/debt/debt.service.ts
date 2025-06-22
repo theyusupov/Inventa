@@ -7,14 +7,23 @@ import { UpdateDebtDto } from './dto/update-debt.dto';
 export class DebtService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateDebtDto) {
+  async create(dto: CreateDebtDto, userId: string) {
     const contract = await this.prisma.contract.findUnique({ where: { id: dto.contractId } });
     if (!contract) {
       throw new BadRequestException('Contract not found');
     }
 
-    const debt = await this.prisma.debt.create({
-      data: dto,
+    const debt = await this.prisma.debt.create({ data: dto });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'debt',
+        actionType: 'CREATE',
+        recordId: debt.id,
+        newValue: debt,
+        comment: 'Debt created',
+        userId,
+      },
     });
 
     return { message: 'Debt created successfully' };
@@ -36,12 +45,27 @@ export class DebtService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
+    const existing = await this.prisma.debt.findUnique({ where: { id } });
+    if (!existing) throw new BadRequestException('Debt not found');
+
     await this.prisma.debt.delete({ where: { id } });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'debt',
+        actionType: 'DELETE',
+        recordId: id,
+        oldValue: existing,
+        comment: 'Debt deleted',
+        userId,
+      },
+    });
+
     return { message: 'Debt deleted successfully' };
   }
 
-  async update(id: string, dto: UpdateDebtDto) {
+  async update(id: string, dto: UpdateDebtDto, userId: string) {
     const existing = await this.prisma.debt.findUnique({ where: { id } });
     if (!existing) throw new BadRequestException('Debt not found');
 
@@ -53,7 +77,18 @@ export class DebtService {
       },
     });
 
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'debt',
+        actionType: 'UPDATE',
+        recordId: updated.id,
+        oldValue: existing,
+        newValue: updated,
+        comment: 'Debt updated',
+        userId,
+      },
+    });
+
     return { message: 'Debt updated successfully' };
   }
-
 }
