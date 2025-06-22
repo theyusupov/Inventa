@@ -31,6 +31,10 @@ enum Units {
   PIECE
   LITER
   METER
+  BOX
+  SET
+  PACK
+  TON
 }
 
 enum PaymentType {

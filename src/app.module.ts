@@ -13,9 +13,11 @@ import { ContractModule } from './contract/contract.module';
 import { DebtModule } from './debt/debt.module';
 import { ReasonModule } from './reason/reason.module';
 import { ProductReturnModule } from './product-return/product-return.module';
+import { PaymentModule } from './payment/payment.module';
+import { SalaryModule } from './salary/salary.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, ProductActionHistoryModule, PurchaseModule, ContractModule, DebtModule, ReasonModule, ProductReturnModule],
+  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, ProductActionHistoryModule, PurchaseModule, ContractModule, DebtModule, ReasonModule, ProductReturnModule, PaymentModule, SalaryModule],
   controllers: [AppController],
   providers: [AppService],
 })
