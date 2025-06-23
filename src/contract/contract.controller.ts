@@ -40,7 +40,7 @@ export class ContractController {
   }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.STAFF])
+  @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get()
   @ApiOperation({ summary: 'Get all contracts' })
   findAll() {
@@ -57,7 +57,7 @@ export class ContractController {
   }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.STAFF])
+  @Roles([UserRole.STAFF, UserRole.OWNER])
   @Patch(':id')
   @ApiOperation({ summary: 'Update contract by ID' })
   @ApiParam({ name: 'id', description: 'Contract ID' })

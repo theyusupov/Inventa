@@ -33,8 +33,11 @@ export class PaymentService {
 
     const contractCheck = await this.prisma.debt.findFirst({ where: { id: dto.debtId } });
     if (contractCheck?.remainingMonths===0&&contractCheck?.total===0){
-      await this.prisma.contract.update({where:{id:debt.contractId},data:{status:"COMPLETED"}})
-      await this.prisma.product.update({where:{id:debt.contractId},data:{isActive:false}})
+      let contract = await this.prisma.contract.update({where:{id:debt.contractId},data:{status:"COMPLETED"}})
+      let checkProduct = await this.prisma.product.findUnique({where:{id:contract.productId}})
+      if(checkProduct?.quantity===0){
+        await this.prisma.product.update({where:{id:checkProduct.id},data:{isActive:false}})
+      }
     }
 
     return { message: 'Payment created successfully' };

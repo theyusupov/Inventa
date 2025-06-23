@@ -117,6 +117,17 @@ export class UserController {
     return this.userService.findAll();
   }
 
+
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiBody({ schema: { example: { newPassword: 'newpass123' } } })
+  @Patch('reset-password')
+  resetPassword(@Request() req, @Body() data: newPasswordDto) {
+    const userId = req.user.id;
+    return this.userService.resetPassword(data, userId);
+  }
+
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by ID' })
@@ -160,13 +171,5 @@ export class UserController {
     return this.userService.verifyOtpToReset(body, userId);
   }
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Reset password' })
-  @ApiBody({ schema: { example: { newPassword: 'newpass123' } } })
-  @Patch('reset-password')
-  resetPassword(@Request() req, @Body() data: newPasswordDto) {
-    const userId = req.user.id;
-    return this.userService.resetPassword(data, userId);
-  }
+
 }
