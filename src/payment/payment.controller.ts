@@ -16,7 +16,16 @@ import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 import { JwtRoleGuard } from 'src/shared/guards/role.guard';
 import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 
+
+
+@ApiTags('Payments')
 @Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
@@ -24,6 +33,24 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Post()
+  @ApiOperation({ summary: 'Create a new payment' })
+  @ApiBody({
+    type: CreatePaymentDto,
+    examples: {
+      example1: {
+        summary: 'Payment example',
+        value: {
+          amount: 100000,
+          comment: "First month payment",
+          paymentType: "CASH",  // or CARD
+          type: "INCOME",       // or EXPENSE
+          partnerId: "partner-uuid-example",
+          monthsPaid: 1,
+          debtId: "debt-uuid-example"
+        }
+      }
+    }
+  })
   create(@Body() dto: CreatePaymentDto, @Request() req) {
     const userId = req.user.id;
     return this.paymentService.create(dto, userId);
@@ -32,6 +59,7 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get()
+  @ApiOperation({ summary: 'Get all payments' })
   findAll() {
     return this.paymentService.findAll();
   }
@@ -39,6 +67,8 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get(':id')
+  @ApiOperation({ summary: 'Get payment by ID' })
+  @ApiParam({ name: 'id', description: 'Payment ID' })
   findOne(@Param('id') id: string) {
     return this.paymentService.findOne(id);
   }
@@ -46,6 +76,23 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Patch(':id')
+  @ApiOperation({ summary: 'Update payment by ID' })
+  @ApiParam({ name: 'id', description: 'Payment ID' })
+  @ApiBody({
+    type: UpdatePaymentDto,
+    examples: {
+      example1: {
+        summary: 'Update payment data',
+        value: {
+          amount: 120000,
+          comment: "Updated comment",
+          paymentType: "CARD",
+          type: "INCOME",
+          monthsPaid: 2
+        }
+      }
+    }
+  })
   update(@Param('id') id: string, @Body() dto: UpdatePaymentDto, @Request() req) {
     const userId = req.user.id;
     return this.paymentService.update(id, dto, userId);
@@ -54,6 +101,8 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete payment by ID' })
+  @ApiParam({ name: 'id', description: 'Payment ID' })
   remove(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
     return this.paymentService.remove(id, userId);

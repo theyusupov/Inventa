@@ -34,23 +34,6 @@ export class CreateUserDto {
 
 
 
-  export class SendotpDto {
-    @IsString()
-    @IsEmail()
-    email: string
-  }
-
-
-  export class verifyOtpDto{
-    @IsString()
-    @IsEmail()
-    email : string;
-
-    @IsString()
-    otp : string;
-  }
-
-
   export class loginDto{
     @IsEmail()
     @IsString()
@@ -59,8 +42,6 @@ export class CreateUserDto {
     @IsString()
     password: string;
   }
-
-
 
   export class RegisterDto {
   @IsString()
@@ -81,6 +62,15 @@ export class CreateUserDto {
 
   @IsString()
   image: string; 
+
+  @IsBoolean()
+  IsActive : boolean
+
+  @IsInt()
+  balance:number
+
+  @IsEnum(UserRole)
+  role:UserRole
 }
 
 export class otps {

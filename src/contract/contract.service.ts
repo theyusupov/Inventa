@@ -101,23 +101,23 @@ export class ContractService {
     return { message: 'Contract updated successfully' };
   }
 
-  async remove(id: string, userId: string) {
-    const existing = await this.prisma.contract.findUnique({ where: { id } });
-    if (!existing) throw new BadRequestException('Contract not found');
+  // async remove(id: string, userId: string) {
+  //   const existing = await this.prisma.contract.findUnique({ where: { id } });
+  //   if (!existing) throw new BadRequestException('Contract not found');
 
-    await this.prisma.contract.delete({ where: { id } });
+  //   await this.prisma.contract.delete({ where: { id } });
 
-    await this.prisma.actionHistory.create({
-      data: {
-        tableName: 'contract',
-        actionType: 'DELETE',
-        recordId: id,
-        oldValue: existing,
-        comment: 'Contract deleted',
-        userId,
-      }
-    });
+  //   await this.prisma.actionHistory.create({
+  //     data: {
+  //       tableName: 'contract',
+  //       actionType: 'DELETE',
+  //       recordId: id,
+  //       oldValue: existing,
+  //       comment: 'Contract deleted',
+  //       userId,
+  //     }
+  //   });
 
-    return { message: 'Contract deleted successfully' };
-  }
+  //   return { message: 'Contract deleted successfully' };
+  // }
 }

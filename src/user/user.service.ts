@@ -8,9 +8,7 @@ import {
   loginDto,
   newPasswordDto,
   otps,
-  RegisterDto,
-  SendotpDto,
-  verifyOtpDto,
+  RegisterDto
 } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -38,94 +36,23 @@ export class UserService {
     },
   });
 
-  async sendOtp(data: SendotpDto): Promise<{ message: string }> {
-    const { email } = data;
-    const otp = GenerateOtp();
-    windowStore[email] = otp;
-    setTimeout(() => {
-      delete windowStore[email];
-    }, 10 * 60 * 1000);
-
-    const options = {
-      from: process.env.EMAIL,
-      to: email,
-      subject: 'Your otp code',
-      text: `Your OTP: ${otp}`,
-    };
-
-    try {
-      await this.transporter.sendMail(options);
-      const user = await this.prisma.user.create({
-        data: {
-          fullName: '',
-          phoneNumber: '',
-          password: '',
-          image: '',
-          isActive: false,
-          balance: 0,
-          role: 'STAFF',
-          email,
-        },
-      });
-
-      await this.prisma.actionHistory.create({
-        data: {
-          tableName: 'user',
-          recordId: user.id,
-          actionType: 'CREATE',
-          comment: 'OTP sent to email for registration',
-        },
-      });
-
-      return { message: 'Otp sent successfully' };
-    } catch (error) {
-      console.log({ error });
-      throw error;
-    }
-  }
-
-  async verifyOtp(data: verifyOtpDto) {
-    const { otp, email } = data;
-    const sentOtp = windowStore[email];
-
-    if (otp === sentOtp) {
-      delete windowStore[email];
-      const updated = await this.prisma.user.update({
-        where: { email },
-        data: { isActive: true },
-      });
-
-      await this.prisma.actionHistory.create({
-        data: {
-          tableName: 'user',
-          recordId: updated.id,
-          actionType: 'CREATE',
-          comment: 'OTP verified for registration',
-        },
-      });
-
-      return { message: 'OTP verified successfully' };
-    }
-
-    return { message: 'Invalid OTP' };
-  }
-
-  async register(createUserDto: RegisterDto) {
+ async createUser(createUserDto: RegisterDto) {
     const isVerified = await this.prisma.user.findFirst({
       where: { email: createUserDto.email },
     });
-    if (!isVerified) return { Error: 'This email is not verified yet' };
+    if (isVerified) return { Error: 'This email using by other user' };
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const user = await this.prisma.user.update({
-      where: { email: createUserDto.email },
-      data: {
+    const user = await this.prisma.user.create({data: {
         fullName: createUserDto.fullName,
         phoneNumber: createUserDto.phoneNumber,
         image: createUserDto.image,
         password: hashedPassword,
-      },
-    });
+        email:createUserDto.email,
+        isActive:createUserDto.IsActive,
+        balance: createUserDto.balance,
+        role:createUserDto.role
+      }});
 
     await this.prisma.actionHistory.create({
       data: {
@@ -134,11 +61,11 @@ export class UserService {
         actionType: 'CREATE',
         userId: user.id,
         newValue: user,
-        comment: 'User registered',
+        comment: 'User created',
       },
     });
 
-    return { message: 'Registered successfully' };
+    return { message: 'Created successfully' };
   }
 
   async login(data: loginDto) {
