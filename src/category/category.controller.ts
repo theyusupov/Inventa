@@ -15,7 +15,7 @@ import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 import { JwtRoleGuard } from 'src/shared/guards/role.guard';
 import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Category')
 @Controller('category')

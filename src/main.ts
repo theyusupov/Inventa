@@ -1,20 +1,20 @@
 import { NestFactory } from '@nestjs/core';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('Inventa API')
-    .setDescription('API documentation for Inventa project')
+    .setTitle('Your API Title')
+    .setDescription('Your API description')
     .setVersion('1.0')
-    .addBearerAuth() 
+    .addSecurityRequirements("bearer",['bearer'])
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document); // http://localhost:3000/api-docs
+  SwaggerModule.setup('api', app, document); // `localhost:3000/api` orqali ko'riladi
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(3000);
 }
-bootstrap();

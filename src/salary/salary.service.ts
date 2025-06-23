@@ -11,6 +11,7 @@ export class SalaryService {
     const salary = await this.prisma.salary.create({
       data: createSalaryDto,
     });
+    await this.prisma.user.update({where:{id:salary.userId||undefined},data:{balance:salary.amount}});
 
     await this.prisma.actionHistory.create({
       data: {
