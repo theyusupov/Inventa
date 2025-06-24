@@ -16,31 +16,51 @@ export class ContractService {
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
-    if(product.quantity<dto.quantity) throw new BadRequestException('Quantity of product not enough');
+    if (product.quantity < dto.quantity)
+      throw new BadRequestException('Quantity of product not enough');
+
+    const sellPrice = dto.sellPrice || product.sellPrice;
+    const total = sellPrice * dto.quantity;
 
     const contract = await this.prisma.contract.create({
       data: {
         ...dto,
-        sellPrice: dto.sellPrice || product.sellPrice,
+        sellPrice,
         userId,
-        status:'ONGOING'
+        status: 'ONGOING',
+        startTotal: total,
+        monthlyPayment: total / dto.repaymentPeriod,
       },
     });
 
-    let purchase = await this.prisma.purchase.findFirst({ where: { productId: product.id}});
+    const purchase = await this.prisma.purchase.findFirst({ where: { productId: product.id } });
     if (!purchase) throw new BadRequestException('Purchase not found');
 
-    await this.prisma.product.update({ where: { id: productId }, data:{quantity: product.quantity-dto.quantity} });
-    await this.prisma.purchase.update({ where: { id: purchase.id }, data:{quantity: product.quantity-dto.quantity} });
+    const newQuantity = product.quantity - dto.quantity;
 
-
-
-    let totalDebt = product.sellPrice * dto.quantity
-    let debt = await this.prisma.debt.create({
+    await this.prisma.product.update({
+      where: { id: productId },
       data: {
-        total: totalDebt,
+        quantity: newQuantity,
+        isActive: newQuantity === 0 ? false : product.isActive, // isActive false agar quantity 0
+      },
+    });
+
+    await this.prisma.purchase.update({
+      where: { id: purchase.id },
+      data: { quantity: newQuantity },
+    });
+
+    await this.prisma.partner.update({
+      where: { id: partner.id },
+      data: { balance: partner.balance - total },
+    });
+
+    const debt = await this.prisma.debt.create({
+      data: {
+        total,
         remainingMonths: dto.repaymentPeriod,
-        contractId: contract.id
+        contractId: contract.id,
       },
     });
 
@@ -52,7 +72,7 @@ export class ContractService {
         newValue: contract,
         comment: 'Contract created',
         userId,
-      }
+      },
     });
 
     await this.prisma.actionHistory.create({
@@ -63,10 +83,10 @@ export class ContractService {
         newValue: debt,
         comment: 'Debt created',
         userId,
-      }
+      },
     });
 
-    return { message: 'Contract created successfully', contract};
+    return { message: 'Contract created successfully', contract };
   }
 
   async findAll() {
@@ -82,7 +102,7 @@ export class ContractService {
   async update(id: string, dto: UpdateContractDto, userId: string) {
     const existing = await this.prisma.contract.findUnique({
       where: { id },
-      include: { debts: true }
+      include: { debts: true },
     });
     if (!existing) throw new BadRequestException('Contract not found');
 
@@ -92,22 +112,38 @@ export class ContractService {
     const purchase = await this.prisma.purchase.findFirst({ where: { productId: product.id } });
     if (!purchase) throw new BadRequestException('Purchase not found');
 
+    const partner = await this.prisma.partner.findUnique({ where: { id: existing.partnerId } });
+    if (!partner) throw new BadRequestException('Partner not found');
+
     const oldQuantity = existing.quantity;
     const newQuantity = dto.quantity ?? oldQuantity;
     const diff = newQuantity - oldQuantity;
 
-    if (diff > 0 && product.quantity < diff) {
+    if (diff > 0 && product.quantity < diff)
       throw new BadRequestException('Not enough product in stock');
-    }
+
+    const sellPrice = dto.sellPrice ?? existing.sellPrice;
+    const repaymentPeriod = dto.repaymentPeriod ?? existing.repaymentPeriod;
+    const newStartTotal = sellPrice * newQuantity;
+    const newMonthlyPayment = newStartTotal / repaymentPeriod;
 
     const updatedContract = await this.prisma.contract.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        startTotal: newStartTotal,
+        monthlyPayment: newMonthlyPayment,
+      },
     });
+
+    const updatedProductQuantity = product.quantity - diff;
 
     await this.prisma.product.update({
       where: { id: product.id },
-      data: { quantity: product.quantity - diff },
+      data: {
+        quantity: updatedProductQuantity,
+        isActive: updatedProductQuantity === 0 ? false : product.isActive,
+      },
     });
 
     await this.prisma.purchase.update({
@@ -115,17 +151,21 @@ export class ContractService {
       data: { quantity: purchase.quantity - diff },
     });
 
-    if (existing.debts.length) {
-      const debt = existing.debts[0]; 
+    const oldStartTotal = existing.startTotal ?? existing.sellPrice * existing.quantity;
+    const balanceDiff = oldStartTotal - newStartTotal;
 
-      const sellPrice = dto.sellPrice ?? existing.sellPrice;
-      const repaymentPeriod = dto.repaymentPeriod ?? existing.repaymentPeriod;
-      const total = sellPrice * newQuantity;
+    await this.prisma.partner.update({
+      where: { id: partner.id },
+      data: { balance: partner.balance + balanceDiff },
+    });
+
+    if (existing.debts.length) {
+      const debt = existing.debts[0];
 
       await this.prisma.debt.update({
         where: { id: debt.id },
         data: {
-          total,
+          total: newStartTotal,
           remainingMonths: repaymentPeriod,
         },
       });
@@ -136,10 +176,14 @@ export class ContractService {
           actionType: 'UPDATE',
           recordId: debt.id,
           oldValue: debt,
-          newValue: { ...debt, total, remainingMonths: repaymentPeriod },
+          newValue: {
+            ...debt,
+            total: newStartTotal,
+            remainingMonths: repaymentPeriod,
+          },
           comment: 'Debt updated due to contract update',
           userId,
-        }
+        },
       });
     }
 
@@ -152,10 +196,11 @@ export class ContractService {
         newValue: updatedContract,
         comment: 'Contract updated',
         userId,
-      }
+      },
     });
 
     return { message: 'Contract updated successfully', updatedContract };
   }
+
 
 }

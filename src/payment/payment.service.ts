@@ -32,12 +32,10 @@ export class PaymentService {
     });
 
     const contractCheck = await this.prisma.debt.findFirst({ where: { id: dto.debtId } });
+    const partner = await this.prisma.partner.findFirst({ where: { id: dto.partnerId } });
     if (contractCheck?.remainingMonths===0&&contractCheck?.total===0){
       let contract = await this.prisma.contract.update({where:{id:debt.contractId},data:{status:"COMPLETED"}})
-      let checkProduct = await this.prisma.product.findUnique({where:{id:contract.productId}})
-      if(checkProduct?.quantity===0){
-        await this.prisma.product.update({where:{id:checkProduct.id},data:{isActive:false}})
-      }
+     await this.prisma.partner.update({where:{id:partner?.id},data:{balance:partner?.balance!+dto.amount}})
     }
 
     return { message: 'Payment created successfully', payment };
@@ -91,19 +89,24 @@ export class PaymentService {
       },
     });
 
+    const partner = await this.prisma.partner.findUnique({
+      where: { id: existing.partnerId },
+    });
+
+    if (!partner) throw new NotFoundException("Partner not found");
+
+    await this.prisma.partner.update({
+      where: { id: partner.id },
+      data: {
+        balance: partner.balance + amountDiff
+      }
+    });
+
     if ((updatedDebt.total ?? 0) <= 0 && (updatedDebt.remainingMonths ?? 0) <= 0) {
       const contract = await this.prisma.contract.update({
         where: { id: debt.contractId },
         data: { status: "COMPLETED" }
       });
-
-      const checkProduct = await this.prisma.product.findUnique({ where: { id: contract.productId } });
-      if ((checkProduct?.quantity ?? 0) === 0) {
-        await this.prisma.product.update({
-          where: { id: checkProduct?.id },
-          data: { isActive: false }
-        });
-      }
     }
 
     await this.prisma.actionHistory.create({

@@ -1,5 +1,0 @@
-Contract bekor qilinganda usrga u to'lagan summani qaytarish,
-Contract tuzilganda total summani userning hisobidan ayrib tashlash va safar to'lov qilinganda uni userning hisobiga qo'shib borish,
-Contract yaratilganida total summani repaymentPeriodga bo'lib har oy nechi puldan to'lashini hisoblash,
-Contract yaratilganida start-total summani bitta fieldga saqlab ketish.
-500 errorlarni qaytishini oldin olish

@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductReturnDto } from './dto/create-product-return.dto';
 import { UpdateProductReturnDto } from './dto/update-product-return.dto';
+import { Decimal } from 'generated/prisma/runtime/library';
 
 @Injectable()
 export class ProductReturnService {
@@ -11,11 +12,25 @@ export class ProductReturnService {
     const contract = await this.prisma.contract.findUnique({ where: { id: dto.contractId } });
     if (!contract) throw new BadRequestException('Contract not found');
 
+    const debt = await this.prisma.debt.findFirst({where:{contractId:contract.id}});
+    if (!debt) throw new BadRequestException('Debt not found');
+
     const product = await this.prisma.product.findUnique({ where: { id: contract.productId } });
     if (!product) throw new BadRequestException('Product not found');
 
     const reason = await this.prisma.reason.findUnique({ where: { id: dto.reasonId } });
     if (!reason) throw new BadRequestException('Reason not found');
+
+    const monthlyPayment = contract.monthlyPayment ?? 0;
+    const repaymentPeriod = contract.repaymentPeriod ?? 0;
+    const remainingMonths = debt.remainingMonths ?? 0;
+
+    const newBalance = (repaymentPeriod - remainingMonths) * monthlyPayment;
+
+
+    let partner = await this.prisma.partner.findFirst({where:{id:contract.partnerId}})
+    if (!partner) throw new BadRequestException('Partner not found');
+    await this.prisma.partner.update({where:{id:partner.id},data:{balance:partner.balance+newBalance}})
 
     if (!dto.isNew) {
       await this.prisma.actionHistory.create({
@@ -85,55 +100,7 @@ export class ProductReturnService {
     return returnedProduct;
   }
 
-  async update(id: string, dto: UpdateProductReturnDto, userId: string) {
-    const existing = await this.prisma.productReturn.findUnique({
-      where: { id },
-      include: { contract: true },
-    });
-    if (!existing) throw new BadRequestException('Product return not found');
 
-    const contract = await this.prisma.contract.findUnique({
-      where: { id: existing.contractId },
-    });
-    if (!contract) throw new BadRequestException('Related contract not found');
-
-    const product = await this.prisma.product.findUnique({
-      where: { id: contract.productId },
-    });
-    if (!product) throw new BadRequestException('Product not found');
-
-    const purchase = await this.prisma.purchase.findFirst({
-      where: { productId: contract.productId },
-    });
-    if (!purchase) throw new BadRequestException('Purchase not found');
-
-    if (dto.contractId && dto.contractId !== existing.contractId) {
-      throw new BadRequestException("Cannot change the contract of a return. Delete and re-create instead.");
-    }
-
-    const updated = await this.prisma.productReturn.update({
-      where: { id },
-      data: {
-        ...dto,
-        updatedAt: new Date(),
-      },
-    });
-
-
-    await this.prisma.actionHistory.create({
-      data: {
-        tableName: 'productReturn',
-        recordId: id,
-        actionType: 'UPDATE',
-        oldValue: existing,
-        newValue: updated,
-        comment: 'Product return updated',
-        userId,
-      },
-    });
-
-    return { message: 'Product return updated successfully', updated };
-  }
 
   async remove(id: string, userId: string) {
     const existing = await this.prisma.productReturn.findUnique({ where: { id } });

@@ -190,6 +190,8 @@ model Contract {
   quantity          Int
   sellPrice         Int
   repaymentPeriod   Int
+  startTotal        Int?
+  monthlyPayment    Int?
   productId         String
   partnerId         String
   userId            String?

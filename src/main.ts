@@ -9,7 +9,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('INVENTA')
-    .setDescription('Your API description')
+    .setDescription('Flexible Installments and Inventory System')
     .setVersion('1.0')
     .addSecurityRequirements("bearer",['bearer'])
     .addBearerAuth()

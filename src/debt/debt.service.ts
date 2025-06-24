@@ -7,27 +7,27 @@ import { UpdateDebtDto } from './dto/update-debt.dto';
 export class DebtService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateDebtDto, userId: string) {
-    const contract = await this.prisma.contract.findUnique({ where: { id: dto.contractId } });
-    if (!contract) {
-      throw new BadRequestException('Contract not found');
-    }
+  // async create(dto: CreateDebtDto, userId: string) {
+  //   const contract = await this.prisma.contract.findUnique({ where: { id: dto.contractId } });
+  //   if (!contract) {
+  //     throw new BadRequestException('Contract not found');
+  //   }
 
-    const debt = await this.prisma.debt.create({ data: dto });
+  //   const debt = await this.prisma.debt.create({ data: dto });
 
-    await this.prisma.actionHistory.create({
-      data: {
-        tableName: 'debt',
-        actionType: 'CREATE',
-        recordId: debt.id,
-        newValue: debt,
-        comment: 'Debt created',
-        userId,
-      },
-    });
+  //   await this.prisma.actionHistory.create({
+  //     data: {
+  //       tableName: 'debt',
+  //       actionType: 'CREATE',
+  //       recordId: debt.id,
+  //       newValue: debt,
+  //       comment: 'Debt created',
+  //       userId,
+  //     },
+  //   });
 
-    return { message: 'Debt created successfully', debt };
-  }
+  //   return { message: 'Debt created successfully', debt };
+  // }
 
   async findAll() {
     return this.prisma.debt.findMany({

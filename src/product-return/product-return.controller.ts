@@ -77,28 +77,7 @@ export class ProductReturnController {
     return this.productReturnService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.STAFF, UserRole.OWNER])
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update a product return' })
-  @ApiParam({ name: 'id', description: 'Product return ID' })
-  @ApiBody({
-    type: UpdateProductReturnDto,
-    examples: {
-      example1: {
-        summary: 'Update product return reason',
-        value: {
-          isNew: true,
-          contractId: 'updated-contract-id',
-          reasonId: 'updated-reason-id',
-        },
-      },
-    },
-  })
-  update(@Param('id') id: string, @Body() dto: UpdateProductReturnDto, @Request() req) {
-    const userId = req.user.id;
-    return this.productReturnService.update(id, dto, userId);
-  }
+
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])

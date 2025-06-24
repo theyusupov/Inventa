@@ -23,27 +23,27 @@ import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 export class DebtController {
   constructor(private readonly debtService: DebtService) {}
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.STAFF, UserRole.OWNER])
-  @Post()
-  @ApiOperation({ summary: 'Create new debt' })
-  @ApiBody({
-    type: CreateDebtDto,
-    examples: {
-      example1: {
-        summary: 'Basic Debt Creation',
-        value: {
-          total: 1200000,
-          repaymentPeriod: 6,
-          contractId: 'a6c742e0-19c9-4ef8-812e-f7c59b6b4aa2'
-        }
-      }
-    }
-  })
-  create(@Body() dto: CreateDebtDto, @Request() req) {
-    const userId = req.user.id;
-    return this.debtService.create(dto, userId);
-  }
+  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  // @Roles([UserRole.STAFF, UserRole.OWNER])
+  // @Post()
+  // @ApiOperation({ summary: 'Create new debt' })
+  // @ApiBody({
+  //   type: CreateDebtDto,
+  //   examples: {
+  //     example1: {
+  //       summary: 'Basic Debt Creation',
+  //       value: {
+  //         total: 1200000,
+  //         repaymentPeriod: 6,
+  //         contractId: 'a6c742e0-19c9-4ef8-812e-f7c59b6b4aa2'
+  //       }
+  //     }
+  //   }
+  // })
+  // create(@Body() dto: CreateDebtDto, @Request() req) {
+  //   const userId = req.user.id;
+  //   return this.debtService.create(dto, userId);
+  // }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
