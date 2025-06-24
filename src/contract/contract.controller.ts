@@ -25,12 +25,9 @@ export class ContractController {
         summary: 'Basic Contract Creation',
         value: {
           quantity: 5,
-          sellPrice: 250000,
           repaymentPeriod: 6,
           productId: 'product-uuid',
-          partnerId: 'partner-uuid',
-          status: 'ONGOING' 
-        },
+          partnerId: 'partner-uuid'        },
       },
     },
   })

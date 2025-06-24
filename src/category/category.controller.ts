@@ -32,15 +32,15 @@ export class CategoryController {
     description: 'Create a new category',
     examples: {
       example1: {
-        summary: 'Food category',
+        summary: 'Electronics',
         value: {
-          name: 'Food',
+          name: 'Electronics',
         },
       },
       example2: {
-        summary: 'Clothing category',
+        summary: 'Electronics',
         value: {
-          name: 'Clothing',
+          name: 'Electronics',
         },
       },
     },

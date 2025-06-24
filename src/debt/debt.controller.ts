@@ -72,25 +72,25 @@ export class DebtController {
     return this.debtService.remove(id, userId);
   }
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.STAFF, UserRole.OWNER])
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update a debt by ID' })
-  @ApiParam({ name: 'id', description: 'Debt ID' })
-  @ApiBody({
-    type: UpdateDebtDto,
-    examples: {
-      example1: {
-        summary: 'Update total and repaymentPeriod',
-        value: {
-          total: 1000000,
-          repaymentPeriod: 8
-        }
-      }
-    }
-  })
-  update(@Param('id') id: string, @Body() dto: UpdateDebtDto, @Request() req) {
-    const userId = req.user.id;
-    return this.debtService.update(id, dto, userId);
-  }
+  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  // @Roles([UserRole.STAFF, UserRole.OWNER])
+  // @Patch(':id')
+  // @ApiOperation({ summary: 'Update a debt by ID' })
+  // @ApiParam({ name: 'id', description: 'Debt ID' })
+  // @ApiBody({
+  //   type: UpdateDebtDto,
+  //   examples: {
+  //     example1: {
+  //       summary: 'Update total and repaymentPeriod',
+  //       value: {
+  //         total: 1000000,
+  //         repaymentPeriod: 8
+  //       }
+  //     }
+  //   }
+  // })
+  // update(@Param('id') id: string, @Body() dto: UpdateDebtDto, @Request() req) {
+  //   const userId = req.user.id;
+  //   return this.debtService.update(id, dto, userId);
+  // }
 }

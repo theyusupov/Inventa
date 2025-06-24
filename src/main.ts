@@ -16,7 +16,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document); // `localhost:3000/api` orqali ko'riladi
+  SwaggerModule.setup('api', app, document); // `localhost:2000/api` || `localhost:3000/api` orqali ko'riladi
 
   await app.listen(process.env.PORT||3000);
 }

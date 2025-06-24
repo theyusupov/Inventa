@@ -21,7 +21,7 @@ export class ContractService {
     const contract = await this.prisma.contract.create({
       data: {
         ...dto,
-        sellPrice: product.sellPrice,
+        sellPrice: dto.sellPrice || product.sellPrice,
         userId,
         status:'ONGOING'
       },
@@ -70,7 +70,7 @@ export class ContractService {
   }
 
   async findAll() {
-    return this.prisma.contract.findMany();
+    return await this.prisma.contract.findMany();
   }
 
   async findOne(id: string) {
@@ -80,26 +80,82 @@ export class ContractService {
   }
 
   async update(id: string, dto: UpdateContractDto, userId: string) {
-    const existing = await this.prisma.contract.findUnique({ where: { id } });
+    const existing = await this.prisma.contract.findUnique({
+      where: { id },
+      include: { debts: true }
+    });
     if (!existing) throw new BadRequestException('Contract not found');
 
-    const updated = await this.prisma.contract.update({
+    const product = await this.prisma.product.findUnique({ where: { id: existing.productId } });
+    if (!product) throw new BadRequestException('Product not found');
+
+    const purchase = await this.prisma.purchase.findFirst({ where: { productId: product.id } });
+    if (!purchase) throw new BadRequestException('Purchase not found');
+
+    const oldQuantity = existing.quantity;
+    const newQuantity = dto.quantity ?? oldQuantity;
+    const diff = newQuantity - oldQuantity;
+
+    if (diff > 0 && product.quantity < diff) {
+      throw new BadRequestException('Not enough product in stock');
+    }
+
+    const updatedContract = await this.prisma.contract.update({
       where: { id },
       data: dto,
     });
+
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: { quantity: product.quantity - diff },
+    });
+
+    await this.prisma.purchase.update({
+      where: { id: purchase.id },
+      data: { quantity: purchase.quantity - diff },
+    });
+
+    if (existing.debts.length) {
+      const debt = existing.debts[0]; 
+
+      const sellPrice = dto.sellPrice ?? existing.sellPrice;
+      const repaymentPeriod = dto.repaymentPeriod ?? existing.repaymentPeriod;
+      const total = sellPrice * newQuantity;
+
+      await this.prisma.debt.update({
+        where: { id: debt.id },
+        data: {
+          total,
+          remainingMonths: repaymentPeriod,
+        },
+      });
+
+      await this.prisma.actionHistory.create({
+        data: {
+          tableName: 'debt',
+          actionType: 'UPDATE',
+          recordId: debt.id,
+          oldValue: debt,
+          newValue: { ...debt, total, remainingMonths: repaymentPeriod },
+          comment: 'Debt updated due to contract update',
+          userId,
+        }
+      });
+    }
 
     await this.prisma.actionHistory.create({
       data: {
         tableName: 'contract',
         actionType: 'UPDATE',
-        recordId: updated.id,
+        recordId: updatedContract.id,
         oldValue: existing,
-        newValue: updated,
+        newValue: updatedContract,
         comment: 'Contract updated',
         userId,
       }
     });
 
-    return { message: 'Contract updated successfully', updated };
+    return { message: 'Contract updated successfully', updatedContract };
   }
+
 }

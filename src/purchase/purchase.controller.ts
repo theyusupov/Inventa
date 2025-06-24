@@ -36,8 +36,6 @@ export class PurchaseController {
       example1: {
         summary: 'Basic purchase example',
         value: {
-          quantity: 10,
-          buyPrice: 15000,
           comment: 'Purchased 10 units of product A',
           partnerId: 'partner-uuid',
           productId: 'product-uuid',

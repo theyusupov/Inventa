@@ -174,7 +174,7 @@ model Purchase {
   comment    String
   userId     String?
   partnerId  String
-  productId  String
+  productId  String @unique
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 

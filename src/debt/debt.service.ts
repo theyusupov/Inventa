@@ -67,30 +67,30 @@ export class DebtService {
     return { message: 'Debt deleted successfully' };
   }
 
-  async update(id: string, dto: UpdateDebtDto, userId: string) {
-    const existing = await this.prisma.debt.findUnique({ where: { id } });
-    if (!existing) throw new BadRequestException('Debt not found');
+  // async update(id: string, dto: UpdateDebtDto, userId: string) {
+  //   const existing = await this.prisma.debt.findUnique({ where: { id } });
+  //   if (!existing) throw new BadRequestException('Debt not found');
 
-    const updated = await this.prisma.debt.update({
-      where: { id },
-      data: {
-        ...dto,
-        updatedAt: new Date(),
-      },
-    });
+  //   const updated = await this.prisma.debt.update({
+  //     where: { id },
+  //     data: {
+  //       ...dto,
+  //       updatedAt: new Date(),
+  //     },
+  //   });
 
-    await this.prisma.actionHistory.create({
-      data: {
-        tableName: 'debt',
-        actionType: 'UPDATE',
-        recordId: updated.id,
-        oldValue: existing,
-        newValue: updated,
-        comment: 'Debt updated',
-        userId,
-      },
-    });
+  //   await this.prisma.actionHistory.create({
+  //     data: {
+  //       tableName: 'debt',
+  //       actionType: 'UPDATE',
+  //       recordId: updated.id,
+  //       oldValue: existing,
+  //       newValue: updated,
+  //       comment: 'Debt updated',
+  //       userId,
+  //     },
+  //   });
 
-    return { message: 'Debt updated successfully', updated};
-  }
+  //   return { message: 'Debt updated successfully', updated};
+  // }
 }

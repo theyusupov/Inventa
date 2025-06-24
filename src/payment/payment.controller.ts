@@ -42,8 +42,8 @@ export class PaymentController {
         value: {
           amount: 100000,
           comment: "First month payment",
-          paymentType: "CASH",  // or CARD
-          type: "INCOME",       // or EXPENSE
+          paymentType: "CASH",  
+          type: "IN",       
           partnerId: "partner-uuid-example",
           monthsPaid: 1,
           debtId: "debt-uuid-example"
@@ -87,7 +87,7 @@ export class PaymentController {
           amount: 120000,
           comment: "Updated comment",
           paymentType: "CARD",
-          type: "INCOME",
+          type: "IN",
           monthsPaid: 2
         }
       }

@@ -80,13 +80,13 @@ export class UserController {
   @ApiBody({
     schema: {
       example: {
-        fullName: 'John Doe',
-        phoneNumber: '+998901234567',
-        email: 'johndoe@example.com',
+        fullName: 'Ruzimuhammad Yusupov',
+        phoneNumber: '+998-90-123-45-67',
+        email: 'yusupovruzimuhammad4@gmail.com',
         password: '123456',
         image: 'image.jpg',
         IsActive: true,
-        balance: 1000,
+        balance: 0,
         role: 'STAFF'
       }
     }
@@ -100,7 +100,7 @@ export class UserController {
   @ApiBody({
     schema: {
       example: {
-        email: 'johndoe@example.com',
+        email: 'yusupovruzimuhammad4@gmail.com',
         password: '123456'
       }
     }

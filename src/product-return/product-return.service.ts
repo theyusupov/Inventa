@@ -48,6 +48,7 @@ export class ProductReturnService {
     });
 
     await this.prisma.product.update({where:{id:contract.productId},data:{quantity:product.quantity+contract.quantity}})
+    await this.prisma.purchase.update({where:{productId:contract.productId},data:{quantity:product.quantity+contract.quantity}})
     await this.prisma.contract.update({where:{id:dto.contractId},data:{status:"CANCELLED"}});
     await this.prisma.actionHistory.create({
       data: {
@@ -55,7 +56,7 @@ export class ProductReturnService {
         recordId: contract.id,
         actionType: 'DELETE',
         oldValue: contract,
-        comment: 'Contract canceled because of cutomer return product',
+        comment: 'Contract canceled because cutomer returned product',
         userId,
       },
     });
@@ -64,7 +65,7 @@ export class ProductReturnService {
   }
 
   async findAll() {
-    return this.prisma.productReturn.findMany({
+    return await this.prisma.productReturn.findMany({
       include: {
         contract: true,
         reason: true,
@@ -85,8 +86,30 @@ export class ProductReturnService {
   }
 
   async update(id: string, dto: UpdateProductReturnDto, userId: string) {
-    const existing = await this.prisma.productReturn.findUnique({ where: { id } });
+    const existing = await this.prisma.productReturn.findUnique({
+      where: { id },
+      include: { contract: true },
+    });
     if (!existing) throw new BadRequestException('Product return not found');
+
+    const contract = await this.prisma.contract.findUnique({
+      where: { id: existing.contractId },
+    });
+    if (!contract) throw new BadRequestException('Related contract not found');
+
+    const product = await this.prisma.product.findUnique({
+      where: { id: contract.productId },
+    });
+    if (!product) throw new BadRequestException('Product not found');
+
+    const purchase = await this.prisma.purchase.findFirst({
+      where: { productId: contract.productId },
+    });
+    if (!purchase) throw new BadRequestException('Purchase not found');
+
+    if (dto.contractId && dto.contractId !== existing.contractId) {
+      throw new BadRequestException("Cannot change the contract of a return. Delete and re-create instead.");
+    }
 
     const updated = await this.prisma.productReturn.update({
       where: { id },
@@ -95,6 +118,7 @@ export class ProductReturnService {
         updatedAt: new Date(),
       },
     });
+
 
     await this.prisma.actionHistory.create({
       data: {

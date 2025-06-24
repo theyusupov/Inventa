@@ -63,10 +63,48 @@ export class PaymentService {
     const existing = await this.prisma.payment.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Payment not found');
 
+    const debt = await this.prisma.debt.findUnique({ where: { id: existing.debtId } });
+    if (!debt) throw new NotFoundException('Debt not found');
+
+    const oldAmount = existing.amount ?? 0;
+    const oldMonthsPaid = existing.monthsPaid ?? 0;
+    const newAmount = dto.amount ?? oldAmount;
+    const newMonthsPaid = dto.monthsPaid ?? oldMonthsPaid;
+
+    const amountDiff = newAmount - oldAmount;
+    const monthsPaidDiff = newMonthsPaid - oldMonthsPaid;
+
+    const oldRemainingMonths = debt.remainingMonths ?? 0;
+    const newTotal = (debt.total ?? 0) - amountDiff;
+    const newRemainingMonths = oldRemainingMonths - monthsPaidDiff;
+
     const updated = await this.prisma.payment.update({
       where: { id },
       data: dto,
     });
+
+    const updatedDebt = await this.prisma.debt.update({
+      where: { id: debt.id },
+      data: {
+        total: newTotal,
+        remainingMonths: newRemainingMonths,
+      },
+    });
+
+    if ((updatedDebt.total ?? 0) <= 0 && (updatedDebt.remainingMonths ?? 0) <= 0) {
+      const contract = await this.prisma.contract.update({
+        where: { id: debt.contractId },
+        data: { status: "COMPLETED" }
+      });
+
+      const checkProduct = await this.prisma.product.findUnique({ where: { id: contract.productId } });
+      if ((checkProduct?.quantity ?? 0) === 0) {
+        await this.prisma.product.update({
+          where: { id: checkProduct?.id },
+          data: { isActive: false }
+        });
+      }
+    }
 
     await this.prisma.actionHistory.create({
       data: {
@@ -76,7 +114,7 @@ export class PaymentService {
         oldValue: existing,
         newValue: updated,
         userId,
-        comment: 'Payment updated',
+        comment: 'Payment updated and debt adjusted',
       },
     });
 
