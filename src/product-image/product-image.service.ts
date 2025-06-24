@@ -27,7 +27,7 @@ export class ProductImageService {
       },
     });
 
-    return { message: 'Image uploaded successfully' };
+    return { message: 'Image uploaded successfully', newImage };
   }
 
   async findAll() {

@@ -32,7 +32,7 @@ export class ProductService {
       },
     });
 
-    return { message: 'Product created successfully' };
+    return { message: 'Product created successfully', product };
   }
 
   async findAll() {
@@ -69,7 +69,7 @@ export class ProductService {
       },
     });
 
-    return { message: 'Product updated successfully' };
+    return { message: 'Product updated successfully', product};
   }
 
   async remove(id: string, userId: string) {

@@ -29,15 +29,17 @@ export class PurchaseService {
         comment: 'Purchase created',
       },
   });
-  return { message: 'Purchase created successfully' };
+  return { message: 'Purchase created successfully', purchase };
   }
 
   async findAll() {
-    return this.prisma.purchase.findMany({ include: { product: true, partner: true } });
+    return await this.prisma.purchase.findMany({ include: { product: true, partner: true } });
   }
 
   async findOne(id: string) {
-    return this.prisma.purchase.findUnique({ where: { id } });
+    let purchase = await this.prisma.purchase.findUnique({ where: { id } });
+    if (!purchase) throw new NotFoundException('Purchase not found');
+    return purchase
   }
 
   async remove(id: string, userId: string) {

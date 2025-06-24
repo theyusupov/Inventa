@@ -65,7 +65,13 @@ export class UserService {
       },
     });
 
-    return { message: 'Created successfully' };
+    return { message: 'Created successfully', data:{        
+      fullName: createUserDto.fullName,
+      phoneNumber: createUserDto.phoneNumber,
+      image: createUserDto.image,
+      email:createUserDto.email,
+      balance: createUserDto.balance}
+    };
   }
 
   async login(data: loginDto) {
@@ -93,7 +99,7 @@ export class UserService {
   }
 
   async findAll() {
-    return this.prisma.user.findMany();
+    return await this.prisma.user.findMany();
   }
 
   async findOne(id: string) {
@@ -129,7 +135,7 @@ export class UserService {
       },
     });
 
-    return { message: 'Image updated successfully' };
+    return { message: 'Image updated successfully', updated };
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -152,7 +158,7 @@ export class UserService {
       },
     });
 
-    return { message: 'User updated successfully' };
+    return { message: 'User updated successfully', updated };
   }
 
   async remove(id: string) {

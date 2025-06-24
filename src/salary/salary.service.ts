@@ -24,11 +24,11 @@ export class SalaryService {
       },
     });
 
-    return { message: 'Salary created successfully' };
+    return { message: 'Salary created successfully', salary };
   }
 
   async findAll() {
-    return this.prisma.salary.findMany({ include: { user: true } });
+    return await this.prisma.salary.findMany({ include: { user: true } });
   }
 
   async findOne(id: string) {
@@ -61,7 +61,7 @@ export class SalaryService {
       },
     });
 
-    return { message: 'Salary updated successfully' };
+    return { message: 'Salary updated successfully', updated };
   }
 
   async remove(id: string, userId: string) {

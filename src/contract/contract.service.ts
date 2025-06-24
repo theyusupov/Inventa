@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
@@ -66,7 +66,7 @@ export class ContractService {
       }
     });
 
-    return { message: 'Contract created successfully' };
+    return { message: 'Contract created successfully', contract};
   }
 
   async findAll() {
@@ -74,7 +74,9 @@ export class ContractService {
   }
 
   async findOne(id: string) {
-    return this.prisma.contract.findUnique({ where: { id }, include: { debts: true, returns: true } });
+    let contract = await  this.prisma.contract.findUnique({ where: { id }, include: { debts: true, returns: true } })
+    if(!contract)throw new NotFoundException('Contract not found');
+    return contract;
   }
 
   async update(id: string, dto: UpdateContractDto, userId: string) {
@@ -98,26 +100,6 @@ export class ContractService {
       }
     });
 
-    return { message: 'Contract updated successfully' };
+    return { message: 'Contract updated successfully', updated };
   }
-
-  // async remove(id: string, userId: string) {
-  //   const existing = await this.prisma.contract.findUnique({ where: { id } });
-  //   if (!existing) throw new BadRequestException('Contract not found');
-
-  //   await this.prisma.contract.delete({ where: { id } });
-
-  //   await this.prisma.actionHistory.create({
-  //     data: {
-  //       tableName: 'contract',
-  //       actionType: 'DELETE',
-  //       recordId: id,
-  //       oldValue: existing,
-  //       comment: 'Contract deleted',
-  //       userId,
-  //     }
-  //   });
-
-  //   return { message: 'Contract deleted successfully' };
-  // }
 }

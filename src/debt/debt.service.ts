@@ -26,7 +26,7 @@ export class DebtService {
       },
     });
 
-    return { message: 'Debt created successfully' };
+    return { message: 'Debt created successfully', debt };
   }
 
   async findAll() {
@@ -39,10 +39,12 @@ export class DebtService {
   }
 
   async findOne(id: string) {
-    return this.prisma.debt.findUnique({
+    let debt = await this.prisma.debt.findUnique({
       where: { id },
       include: { payments: true },
     });
+    if(!debt)throw new BadRequestException('Debt not found');
+     return {message:"Debt created sucessfully!", debt}
   }
 
   async remove(id: string, userId: string) {
@@ -89,6 +91,6 @@ export class DebtService {
       },
     });
 
-    return { message: 'Debt updated successfully' };
+    return { message: 'Debt updated successfully', updated};
   }
 }

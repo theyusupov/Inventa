@@ -40,7 +40,7 @@ export class PaymentService {
       }
     }
 
-    return { message: 'Payment created successfully' };
+    return { message: 'Payment created successfully', payment };
   }
 
   async findAll() {
@@ -80,7 +80,7 @@ export class PaymentService {
       },
     });
 
-    return { message: 'Payment updated successfully' };
+    return { message: 'Payment updated successfully', updated };
   }
 
   async remove(id: string, userId: string) {

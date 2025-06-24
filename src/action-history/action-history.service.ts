@@ -11,6 +11,7 @@ export class ActionHistoryService {
   }
 
   async remove(id: string) {
-    return await this.prisma.actionHistory.delete({where:{id}});
+    await this.prisma.actionHistory.delete({where:{id}})
+    return {message:"History deleted successfully!"};
   }
 }

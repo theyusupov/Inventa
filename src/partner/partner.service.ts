@@ -23,7 +23,7 @@ export class PartnerService {
       },
     });
 
-    return { message: 'Partner created successfully' };
+    return { message: 'Partner created successfully', partner};
   }
 
   async findAll() {
@@ -59,7 +59,7 @@ export class PartnerService {
       },
     });
 
-    return { message: 'Partner updated successfully' };
+    return { message: 'Partner updated successfully', partner};
   }
 
   async remove(id: string, userId: string) {

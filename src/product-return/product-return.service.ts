@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductReturnDto } from './dto/create-product-return.dto';
 import { UpdateProductReturnDto } from './dto/update-product-return.dto';
@@ -60,7 +60,7 @@ export class ProductReturnService {
       },
     });
 
-    return { message: 'Product return recorded successfully' };
+    return { message: 'Product return recorded successfully', productReturn };
   }
 
   async findAll() {
@@ -73,13 +73,15 @@ export class ProductReturnService {
   }
 
   async findOne(id: string) {
-    return this.prisma.productReturn.findUnique({
+    let returnedProduct = await this.prisma.productReturn.findUnique({
       where: { id },
       include: {
         contract: true,
         reason: true,
       },
-    });
+    })
+    if (!returnedProduct) throw new NotFoundException('Returned product not found');
+    return returnedProduct;
   }
 
   async update(id: string, dto: UpdateProductReturnDto, userId: string) {
@@ -106,7 +108,7 @@ export class ProductReturnService {
       },
     });
 
-    return { message: 'Product return updated successfully' };
+    return { message: 'Product return updated successfully', updated };
   }
 
   async remove(id: string, userId: string) {

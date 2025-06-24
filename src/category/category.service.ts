@@ -22,7 +22,7 @@ export class CategoryService {
       },
     });
 
-    return { message: 'Category created successfully' };
+    return { message: 'Category created successfully', category};
   }
 
   async findAll() {
@@ -58,7 +58,7 @@ export class CategoryService {
       },
     });
 
-    return { message: 'Category updated successfully' };
+    return { message: 'Category updated successfully', category };
   }
 
   async remove(id: string, userId: string) {

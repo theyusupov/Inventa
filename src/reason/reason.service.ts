@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateReasonDto } from './dto/create-reason.dto';
 import { UpdateReasonDto } from './dto/update-reason.dto';
@@ -23,17 +23,19 @@ export class ReasonService {
       },
     });
 
-    return { message: 'Reason created successfully' };
+    return { message: 'Reason created successfully', reason };
   }
 
   async findAll() {
-    return this.prisma.reason.findMany();
+    return await this.prisma.reason.findMany();
   }
 
   async findOne(id: string) {
-    return this.prisma.reason.findUnique({
+    let reason = await this.prisma.reason.findUnique({
       where: { id },
     });
+    if (!reason) throw new NotFoundException('Reason not found');
+    return reason
   }
 
   async update(id: string, dto: UpdateReasonDto, userId: string) {
@@ -60,7 +62,7 @@ export class ReasonService {
       },
     });
 
-    return { message: 'Reason updated successfully' };
+    return { message: 'Reason updated successfully', updated };
   }
 
   async remove(id: string, userId: string) {
