@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateReasonDto } from './dto/create-reason.dto';
 import { UpdateReasonDto } from './dto/update-reason.dto';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class ReasonService {
@@ -26,8 +27,47 @@ export class ReasonService {
     return { message: 'Reason created successfully', reason };
   }
 
-  async findAll() {
-    return await this.prisma.reason.findMany();
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.ReasonWhereInput | undefined = search
+      ? {
+          reasonText: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        }
+      : undefined;
+
+    const reasons = await this.prisma.reason.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
+    });
+
+    const total = await this.prisma.reason.count({ where });
+
+    return {
+      data: reasons,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {

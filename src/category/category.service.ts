@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class CategoryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createCategoryDto: CreateCategoryDto, userId: string) {
+async create(createCategoryDto: CreateCategoryDto, userId: string) {
     const category = await this.prisma.category.create({
       data: createCategoryDto,
     });
@@ -23,11 +24,52 @@ export class CategoryService {
     });
 
     return { message: 'Category created successfully', category};
-  }
+}
 
-  async findAll() {
-    return await this.prisma.category.findMany();
-  }
+async findAll(params: {
+  search?: string;
+  sortBy?: keyof Prisma.CategoryOrderByWithRelationInput;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}) {
+  const {
+    search,
+    sortBy = 'createdAt',
+    order = 'asc',
+    page = 1,
+    limit = 10,
+  } = params;
+
+  const where: Prisma.CategoryWhereInput = search
+    ? {
+        name: {
+          contains: search,
+          mode: Prisma.QueryMode.insensitive,
+        },
+      }
+    : {};
+
+  const orderBy: Prisma.CategoryOrderByWithRelationInput = {
+    [sortBy]: order as Prisma.SortOrder,
+  };
+
+  const categories = await this.prisma.category.findMany({
+    where,
+    orderBy,
+    skip: (page - 1) * limit,
+    take: limit,
+  });
+
+  const total = await this.prisma.category.count({ where });
+
+  return {
+    data: categories,
+    total,
+    page,
+    lastPage: Math.ceil(total / limit),
+  };
+}
 
   async findOne(id: string) {
     const category = await this.prisma.category.findUnique({ where: { id } });

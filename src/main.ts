@@ -8,8 +8,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('INVENTA')
-    .setDescription('Flexible Installments and Inventory System')
+    .setTitle('Inventa')
+    .setDescription('Inventory System')
     .setVersion('1.0')
     .addSecurityRequirements("bearer",['bearer'])
     .addBearerAuth()

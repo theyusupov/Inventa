@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductImageDto } from './dto/create-product-image.dto';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class ProductImageService {
@@ -30,9 +31,56 @@ export class ProductImageService {
     return { message: 'Image uploaded successfully', newImage };
   }
 
-  async findAll() {
-    return this.prisma.productImage.findMany();
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.ProductImageWhereInput | undefined = search
+      ? {
+          product: {
+            is: {
+              name: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+        }
+      : undefined;
+
+    const productImages = await this.prisma.productImage.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
+      include: {
+        product: true,
+      },
+    });
+
+    const total = await this.prisma.productImage.count({ where });
+
+    return {
+      data: productImages,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
+
 
   async remove(id: string, userId: string) {
     const existing = await this.prisma.productImage.findUnique({ where: { id } });

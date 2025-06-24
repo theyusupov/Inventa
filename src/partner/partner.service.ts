@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class PartnerService {
@@ -26,8 +27,47 @@ export class PartnerService {
     return { message: 'Partner created successfully', partner};
   }
 
-  async findAll() {
-    return await this.prisma.partner.findMany();
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.PartnerWhereInput | undefined = search
+      ? {
+          fullName: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        }
+      : undefined;
+
+    const partners = await this.prisma.partner.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
+    });
+
+    const total = await this.prisma.partner.count({ where });
+
+    return {
+      data: partners,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {

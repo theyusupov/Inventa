@@ -9,6 +9,7 @@ import {
   Body,
   Request,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateProductImageDto } from './dto/create-product-image.dto';
@@ -26,6 +27,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Product Image')
@@ -67,14 +69,32 @@ export class ProductImageController {
     return this.service.create(dto, file, userId);
   }
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.STAFF, UserRole.OWNER])
-  @Get()
-  @ApiOperation({ summary: 'Get all product images' })
-  @ApiResponse({ status: 200, description: 'List of product images' })
-  findAll() {
-    return this.service.findAll();
-  }
+@UseGuards(JwtAuthGuard, JwtRoleGuard)
+@Roles([UserRole.STAFF, UserRole.OWNER])
+@Get()
+@ApiOperation({ summary: 'Get all product images with filters, sorting, and pagination' })
+@ApiQuery({ name: 'search', required: false, type: String })
+@ApiQuery({ name: 'sortBy', required: false, type: String })
+@ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+@ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+@ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+@ApiResponse({ status: 200, description: 'List of product images' })
+findAll(
+  @Query('search') search?: string,
+  @Query('sortBy') sortBy?: string,
+  @Query('order') order: 'asc' | 'desc' = 'asc',
+  @Query('page') page?: string,
+  @Query('limit') limit?: string,
+) {
+  return this.service.findAll({
+    search,
+    sortBy,
+    order,
+    page: parseInt(page || '1'),
+    limit: parseInt(limit || '10'),
+  });
+}
+
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])

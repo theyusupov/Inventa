@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateDebtDto } from './dto/create-debt.dto';
 import { UpdateDebtDto } from './dto/update-debt.dto';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class DebtService {
@@ -29,19 +30,71 @@ export class DebtService {
   //   return { message: 'Debt created successfully', debt };
   // }
 
-  async findAll() {
-    return this.prisma.debt.findMany({
+    
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.DebtWhereInput | undefined = search
+      ? {
+          contract: {
+            is: {
+              partner: {
+                is: {
+                  fullName: {
+                    contains: search,
+                    mode: 'insensitive',
+                  },
+                },
+              },
+            },
+          },
+        }
+      : undefined;
+
+    const debts = await this.prisma.debt.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
       include: {
-        contract: true,
+        contract: {
+          include: {
+            partner: true,
+          },
+        },
         payments: true,
       },
     });
+
+    const total = await this.prisma.debt.count({ where });
+
+    return {
+      data: debts,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
+
 
   async findOne(id: string) {
     let debt = await this.prisma.debt.findUnique({
       where: { id },
-      include: { payments: true },
+      include: {contract: true, payments: true },
     });
     if(!debt)throw new BadRequestException('Debt not found');
      return {message:"Debt created sucessfully!", debt}

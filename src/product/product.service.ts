@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class ProductService {
@@ -35,9 +36,53 @@ export class ProductService {
     return { message: 'Product created successfully', product };
   }
 
-  async findAll() {
-    return await this.prisma.product.findMany();
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.ProductWhereInput | undefined = search
+      ? {
+          name: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        }
+      : undefined;
+
+    const products = await this.prisma.product.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
+      include: {
+        category: true,
+        user: true,
+      },
+    });
+
+    const total = await this.prisma.product.count({ where });
+
+    return {
+      data: products,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
+
 
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({

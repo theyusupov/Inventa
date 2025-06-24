@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class PaymentService {
@@ -45,15 +46,58 @@ export class PaymentService {
     return { message: 'Payment created successfully', payment };
   }
 
-  async findAll() {
-    return this.prisma.payment.findMany({
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.PaymentWhereInput | undefined = search
+      ? {
+          partner: {
+            is: {
+              fullName: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+        }
+      : undefined;
+
+    const payments = await this.prisma.payment.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
       include: {
         partner: true,
         debt: true,
         user: true,
       },
     });
+
+    const total = await this.prisma.payment.count({ where });
+
+    return {
+      data: payments,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
+
 
   async findOne(id: string) {
     const payment = await this.prisma.payment.findUnique({ where: { id } });

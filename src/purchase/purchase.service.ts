@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class PurchaseService {
@@ -32,9 +33,58 @@ export class PurchaseService {
   return { message: 'Purchase created successfully', purchase };
   }
 
-  async findAll() {
-    return await this.prisma.purchase.findMany({ include: { product: true, partner: true } });
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.PurchaseWhereInput | undefined = search
+      ? {
+          partner: {
+            is: {
+              fullName: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+        }
+      : undefined;
+
+    const purchases = await this.prisma.purchase.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
+      include: {
+        product: true,
+        partner: true,
+        user: true,
+      },
+    });
+
+    const total = await this.prisma.purchase.count({ where });
+
+    return {
+      data: purchases,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
+
 
   async findOne(id: string) {
     let purchase = await this.prisma.purchase.findUnique({ where: { id } });

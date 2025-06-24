@@ -9,7 +9,8 @@ import {
   UseInterceptors,
   UploadedFile,
   UseGuards,
-  Request
+  Request,
+  Query
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto, loginDto, newPasswordDto, otps, RegisterDto } from './dto/create-user.dto';
@@ -27,7 +28,8 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiConsumes,
-  ApiBody
+  ApiBody,
+  ApiQuery
 } from '@nestjs/swagger';
 
 @ApiTags('User')
@@ -110,12 +112,31 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.STAFF, UserRole.OWNER])
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all users' })
+  @ApiOperation({ summary: 'Get all users with filters, sorting, and pagination' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
   @Get()
-  findAll() {
-    return this.userService.findAll();
+  findAll(
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order: 'asc' | 'desc' = 'asc',
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.userService.findAll({
+      search,
+      sortBy,
+      order,
+      page: parseInt(page || '1'),
+      limit: parseInt(limit || '10'),
+    });
   }
+
 
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)

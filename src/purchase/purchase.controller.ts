@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { PurchaseService } from './purchase.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
@@ -19,6 +20,7 @@ import {
   ApiOperation,
   ApiBody,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Purchase')
@@ -51,10 +53,28 @@ export class PurchaseController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get()
-  @ApiOperation({ summary: 'Get all purchases' })
-  findAll() {
-    return this.purchaseService.findAll();
+  @ApiOperation({ summary: 'Get all purchases with filters, sorting, and pagination' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  findAll(
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order: 'asc' | 'desc' = 'asc',
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.purchaseService.findAll({
+      search,
+      sortBy,
+      order,
+      page: parseInt(page || '1'),
+      limit: parseInt(limit || '10'),
+    });
   }
+
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])

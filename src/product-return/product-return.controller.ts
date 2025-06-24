@@ -8,6 +8,7 @@ import {
   Body,
   Request,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ProductReturnService } from './product-return.service';
 import { CreateProductReturnDto } from './dto/create-product-return.dto';
@@ -21,6 +22,7 @@ import {
   ApiOperation,
   ApiBody,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 
@@ -63,10 +65,28 @@ export class ProductReturnController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get()
-  @ApiOperation({ summary: 'Get all product returns' })
-  findAll() {
-    return this.productReturnService.findAll();
+  @ApiOperation({ summary: 'Get all product returns with filters, sorting, and pagination' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  findAll(
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order: 'asc' | 'desc' = 'asc',
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.productReturnService.findAll({
+      search,
+      sortBy,
+      order,
+      page: parseInt(page || '1'),
+      limit: parseInt(limit || '10'),
+    });
   }
+
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])

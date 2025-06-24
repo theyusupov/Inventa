@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Delete, Body, UseGuards, Request, Patch } from '@nestjs/common';
+import { Controller, Post, Get, Param, Delete, Body, UseGuards, Request, Patch, Query } from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
@@ -6,7 +6,7 @@ import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 import { JwtRoleGuard } from 'src/shared/guards/role.guard';
 import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
-import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 
 @ApiTags('Contract')
@@ -36,13 +36,25 @@ export class ContractController {
     return this.contractService.create(dto, userId);
   }
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.STAFF, UserRole.OWNER])
-  @Get()
-  @ApiOperation({ summary: 'Get all contracts' })
-  findAll() {
-    return this.contractService.findAll();
-  }
+@UseGuards(JwtAuthGuard, JwtRoleGuard)
+@Roles([UserRole.STAFF, UserRole.OWNER])
+@Get()
+@ApiOperation({ summary: 'Get all contracts with filters, sorting, and pagination' })
+@ApiQuery({ name: 'search', required: false, type: String })
+@ApiQuery({ name: 'sortBy', required: false, type: String })
+@ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+@ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+@ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+findAll(
+  @Query('search') search?: string,
+  @Query('sortBy') sortBy?: string,
+  @Query('order') order: 'asc' | 'desc' = 'asc',
+  @Query('page') page?: string,
+  @Query('limit') limit?: string
+) {
+  return this.contractService.findAll({search,sortBy,order,page: parseInt(page || '1'),limit: parseInt(limit || '10'),});
+}
+
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF])

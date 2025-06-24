@@ -19,6 +19,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { Prisma } from 'generated/prisma';
 dotenv.config();
 
 let otpVerifiedUsers: Record<string, boolean> = {};
@@ -98,8 +99,47 @@ export class UserService {
     return { token };
   }
 
-  async findAll() {
-    return await this.prisma.user.findMany();
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.UserWhereInput | undefined = search
+      ? {
+          fullName: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        }
+      : undefined;
+
+    const users = await this.prisma.user.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
+    });
+
+    const total = await this.prisma.user.count({ where });
+
+    return {
+      data: users,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {

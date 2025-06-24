@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductReturnDto } from './dto/create-product-return.dto';
 import { UpdateProductReturnDto } from './dto/update-product-return.dto';
 import { Decimal } from 'generated/prisma/runtime/library';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class ProductReturnService {
@@ -78,13 +79,61 @@ export class ProductReturnService {
     return { message: 'Product return recorded successfully', productReturn };
   }
 
-  async findAll() {
-    return await this.prisma.productReturn.findMany({
+  async findAll(params: {
+    search?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const where: Prisma.ProductReturnWhereInput | undefined = search
+      ? {
+          contract: {
+            partner: {
+              is: {
+                fullName: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
+              },
+            },
+          },
+        }
+      : undefined;
+
+    const returns = await this.prisma.productReturn.findMany({
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: Number(limit),
       include: {
-        contract: true,
+        contract: {
+          include: {
+            partner: true,
+          },
+        },
         reason: true,
       },
     });
+
+    const total = await this.prisma.productReturn.count({ where });
+
+    return {
+      data: returns,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {
