@@ -22,10 +22,9 @@ export class ProductReturnService {
     if (!reason) throw new BadRequestException('Reason not found');
 
     const monthlyPayment = contract.monthlyPayment ?? 0;
-    const repaymentPeriod = contract.repaymentPeriod ?? 0;
     const remainingMonths = debt.remainingMonths ?? 0;
 
-    const newBalance = (repaymentPeriod - remainingMonths) * monthlyPayment;
+    const newBalance = remainingMonths * monthlyPayment;
 
 
     let partner = await this.prisma.partner.findFirst({where:{id:contract.partnerId}})
@@ -99,8 +98,6 @@ export class ProductReturnService {
     if (!returnedProduct) throw new NotFoundException('Returned product not found');
     return returnedProduct;
   }
-
-
 
   async remove(id: string, userId: string) {
     const existing = await this.prisma.productReturn.findUnique({ where: { id } });

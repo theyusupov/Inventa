@@ -16,8 +16,10 @@ export class ContractService {
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
-    if (product.quantity < dto.quantity)
-      throw new BadRequestException('Quantity of product not enough');
+    if(!product.isActive)throw new BadRequestException("This product isn't active at the moment")
+    if (product.quantity < dto.quantity) throw new BadRequestException('Quantity of product not enough')
+
+    
 
     const sellPrice = dto.sellPrice || product.sellPrice;
     const total = sellPrice * dto.quantity;
@@ -105,6 +107,8 @@ export class ContractService {
       include: { debts: true },
     });
     if (!existing) throw new BadRequestException('Contract not found');
+
+    if(existing.status==='CANCELLED'||existing.status==='COMPLETED')throw new NotFoundException(`This contract has been already ${existing.status.toLowerCase()}`);
 
     const product = await this.prisma.product.findUnique({ where: { id: existing.productId } });
     if (!product) throw new BadRequestException('Product not found');

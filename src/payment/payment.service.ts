@@ -11,6 +11,10 @@ export class PaymentService {
     const debt = await this.prisma.debt.findFirst({ where: { id: dto.debtId } });
     if (!debt) throw new BadRequestException("Debt not found");
 
+    let contract = await this.prisma.contract.findFirst({where:{id:debt.contractId}})
+    if (contract?.status==='CANCELLED'||contract?.status==='COMPLETED') throw new BadRequestException("This contract is invalid.");
+
+
     const payment = await this.prisma.payment.create({
       data: { ...dto, userId },
     });
@@ -34,10 +38,10 @@ export class PaymentService {
     const contractCheck = await this.prisma.debt.findFirst({ where: { id: dto.debtId } });
     const partner = await this.prisma.partner.findFirst({ where: { id: dto.partnerId } });
     if (contractCheck?.remainingMonths===0&&contractCheck?.total===0){
-      let contract = await this.prisma.contract.update({where:{id:debt.contractId},data:{status:"COMPLETED"}})
-     await this.prisma.partner.update({where:{id:partner?.id},data:{balance:partner?.balance!+dto.amount}})
+     await this.prisma.contract.update({where:{id:debt.contractId},data:{status:"COMPLETED"}})
     }
 
+    await this.prisma.partner.update({where:{id:partner?.id},data:{balance:partner?.balance!+dto.amount}})
     return { message: 'Payment created successfully', payment };
   }
 
@@ -63,6 +67,10 @@ export class PaymentService {
 
     const debt = await this.prisma.debt.findUnique({ where: { id: existing.debtId } });
     if (!debt) throw new NotFoundException('Debt not found');
+
+    let contract = await this.prisma.contract.findFirst({where:{id:debt.contractId}})
+    if (contract?.status==='CANCELLED'||contract?.status==='COMPLETED') throw new BadRequestException("This contract is invalid.");
+
 
     const oldAmount = existing.amount ?? 0;
     const oldMonthsPaid = existing.monthsPaid ?? 0;
