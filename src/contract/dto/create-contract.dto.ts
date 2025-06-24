@@ -9,6 +9,9 @@ export class CreateContractDto {
   sellPrice?: number;
 
   @IsInt()
+  buyPrice?: number;
+
+  @IsInt()
   repaymentPeriod: number; 
 
   @IsString()

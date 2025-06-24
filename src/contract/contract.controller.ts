@@ -86,6 +86,7 @@ findAll(
   })
   update(@Param('id') id: string, @Body() dto: UpdateContractDto, @Request() req) {
     const userId = req.user.id;
-    return this.contractService.update(id, dto, userId);
+    return this.contractService.update(id, dto as CreateContractDto, userId);
   }
 }
+ 

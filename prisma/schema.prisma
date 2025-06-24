@@ -188,7 +188,8 @@ model Purchase {
 model Contract {
   id                String @id @default(uuid()) 
   quantity          Int
-  sellPrice         Int
+  sellPrice         Int?
+  buyPrice          Int?
   repaymentPeriod   Int
   startTotal        Int?
   monthlyPayment    Int?

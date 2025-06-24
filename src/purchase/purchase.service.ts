@@ -20,6 +20,9 @@ export class PurchaseService {
       data: { ...createPurchaseDto, buyPrice:createPurchaseDto.buyPrice || product.buyPrice, quantity: createPurchaseDto.quantity || product.quantity, userId },
     });
 
+    await this.prisma.partner.update({where:{id:partner.id},data:{balance:partner.balance+product.buyPrice*product.quantity}})
+
+ 
   await this.prisma.actionHistory.create({
       data: {
         tableName: 'purchase',
