@@ -53,30 +53,30 @@ export class SalaryController {
     return this.salaryService.create(createSalaryDto, userId);
   }
 
-@UseGuards(JwtAuthGuard, JwtRoleGuard)
-@Roles([UserRole.STAFF, UserRole.OWNER])
-@Get()
-@ApiOperation({ summary: 'Get all salaries with filters, sorting, and pagination' })
-@ApiQuery({ name: 'search', required: false, type: String })
-@ApiQuery({ name: 'sortBy', required: false, type: String })
-@ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
-@ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-@ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-findAll(
-  @Query('search') search?: string,
-  @Query('sortBy') sortBy?: string,
-  @Query('order') order: 'asc' | 'desc' = 'asc',
-  @Query('page') page?: string,
-  @Query('limit') limit?: string
-) {
-  return this.salaryService.findAll({
-    search,
-    sortBy,
-    order,
-    page: parseInt(page || '1'),
-    limit: parseInt(limit || '10'),
-  });
-}
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.STAFF, UserRole.OWNER])
+  @Get()
+  @ApiOperation({ summary: 'Get all salaries with filters, sorting, and pagination' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  findAll(
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order: 'asc' | 'desc' = 'asc',
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.salaryService.findAll({
+      search,
+      sortBy,
+      order,
+      page: parseInt(page || '1'),
+      limit: parseInt(limit || '10'),
+    });
+  }
 
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)

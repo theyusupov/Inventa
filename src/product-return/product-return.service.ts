@@ -63,8 +63,12 @@ export class ProductReturnService {
 
     await this.prisma.product.update({
       where: { id: contract.productId },
-      data: { quantity: product.quantity + quantityToRestore },
+      data: {
+        quantity: product.quantity + quantityToRestore,
+        isActive: true, 
+      },
     });
+
 
     await this.prisma.purchase.updateMany({
       where: { productId: contract.productId },

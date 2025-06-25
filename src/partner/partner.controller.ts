@@ -63,32 +63,32 @@ export class PartnerController {
     return this.partnerService.create(createPartnerDto, userId);
   }
 
-@UseGuards(JwtAuthGuard, JwtRoleGuard)
-@Roles([UserRole.STAFF, UserRole.OWNER])
-@Get()
-@ApiBearerAuth()
-@ApiOperation({ summary: 'Get all partners with filters, sorting, and pagination' })
-@ApiQuery({ name: 'search', required: false, type: String })
-@ApiQuery({ name: 'sortBy', required: false, type: String })
-@ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
-@ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-@ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-@ApiResponse({ status: 200, description: 'List of partners' })
-findAll(
-  @Query('search') search?: string,
-  @Query('sortBy') sortBy?: string,
-  @Query('order') order: 'asc' | 'desc' = 'asc',
-  @Query('page') page?: string,
-  @Query('limit') limit?: string
-) {
-  return this.partnerService.findAll({
-    search,
-    sortBy,
-    order,
-    page: parseInt(page || '1'),
-    limit: parseInt(limit || '10'),
-  });
-}
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.STAFF, UserRole.OWNER])
+  @Get()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all partners with filters, sorting, and pagination' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiResponse({ status: 200, description: 'List of partners' })
+  findAll(
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order: 'asc' | 'desc' = 'asc',
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.partnerService.findAll({
+      search,
+      sortBy,
+      order,
+      page: parseInt(page || '1'),
+      limit: parseInt(limit || '10'),
+    });
+  }
 
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
@@ -123,13 +123,13 @@ findAll(
       },
     },
   })
-
   @ApiResponse({ status: 200, description: 'Partner updated successfully' })
   update(@Param('id') id: string, @Body() updatePartnerDto: UpdatePartnerDto, @Request() req) {
     const userId = req.user.id;
     return this.partnerService.update(id, updatePartnerDto, userId);
   }
 
+  
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Delete(':id')
