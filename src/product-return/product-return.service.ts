@@ -1,8 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductReturnDto } from './dto/create-product-return.dto';
-import { UpdateProductReturnDto } from './dto/update-product-return.dto';
-import { Decimal } from 'generated/prisma/runtime/library';
 import { Prisma } from 'generated/prisma';
 
 @Injectable()
@@ -13,7 +11,7 @@ export class ProductReturnService {
     const contract = await this.prisma.contract.findUnique({ where: { id: dto.contractId } });
     if (!contract) throw new BadRequestException('Contract not found');
 
-    const debt = await this.prisma.debt.findFirst({where:{contractId:contract.id}});
+    const debt = await this.prisma.debt.findFirst({ where: { contractId: contract.id } });
     if (!debt) throw new BadRequestException('Debt not found');
 
     const product = await this.prisma.product.findUnique({ where: { id: contract.productId } });
@@ -22,15 +20,12 @@ export class ProductReturnService {
     const reason = await this.prisma.reason.findUnique({ where: { id: dto.reasonId } });
     if (!reason) throw new BadRequestException('Reason not found');
 
+    const partner = await this.prisma.partner.findUnique({ where: { id: contract.partnerId } });
+    if (!partner) throw new BadRequestException('Partner not found');
+
     const monthlyPayment = contract.monthlyPayment ?? 0;
     const remainingMonths = debt.remainingMonths ?? 0;
-
-    const newBalance = remainingMonths * monthlyPayment;
-
-
-    let partner = await this.prisma.partner.findFirst({where:{id:contract.partnerId}})
-    if (!partner) throw new BadRequestException('Partner not found');
-    await this.prisma.partner.update({where:{id:partner.id},data:{balance:partner.balance+newBalance}})
+    const refundAmount = monthlyPayment * remainingMonths;
 
     if (!dto.isNew) {
       await this.prisma.actionHistory.create({
@@ -39,40 +34,56 @@ export class ProductReturnService {
           recordId: product.id,
           actionType: 'REJECT',
           oldValue: product,
-          comment: 'Attempted to return used product',
           userId,
+          comment: 'Attempted to return used product',
         },
       });
-      throw new BadRequestException('Sorry, we cannot accept used products!');
+      throw new BadRequestException('Used products cannot be returned');
     }
 
-    const productReturn = await this.prisma.productReturn.create({
-      data: dto,
+    await this.prisma.partner.update({
+      where: { id: partner.id },
+      data: { balance: partner.balance + refundAmount },
     });
+
+    const productReturn = await this.prisma.productReturn.create({ data: dto });
 
     await this.prisma.actionHistory.create({
       data: {
         tableName: 'productReturn',
         recordId: productReturn.id,
         actionType: 'CREATE',
-        oldValue: undefined,
         newValue: productReturn,
-        comment: 'Product returned successfully',
         userId,
+        comment: 'Product returned successfully',
       },
     });
 
-    await this.prisma.product.update({where:{id:contract.productId},data:{quantity:product.quantity+contract.quantity}})
-    await this.prisma.purchase.update({where:{productId:contract.productId},data:{quantity:product.quantity+contract.quantity}})
-    await this.prisma.contract.update({where:{id:dto.contractId},data:{status:"CANCELLED"}});
+    const quantityToRestore = contract.quantity;
+
+    await this.prisma.product.update({
+      where: { id: contract.productId },
+      data: { quantity: product.quantity + quantityToRestore },
+    });
+
+    await this.prisma.purchase.updateMany({
+      where: { productId: contract.productId },
+      data: { quantity: product.quantity + quantityToRestore },
+    });
+
+    await this.prisma.contract.update({
+      where: { id: contract.id },
+      data: { status: 'CANCELLED' },
+    });
+
     await this.prisma.actionHistory.create({
       data: {
         tableName: 'contract',
         recordId: contract.id,
         actionType: 'DELETE',
         oldValue: contract,
-        comment: 'Contract canceled because cutomer returned product',
         userId,
+        comment: 'Contract canceled due to product return',
       },
     });
 
@@ -94,7 +105,7 @@ export class ProductReturnService {
       limit = 10,
     } = params;
 
-    const where: Prisma.ProductReturnWhereInput | undefined = search
+    const where: Prisma.ProductReturnWhereInput = search
       ? {
           contract: {
             partner: {
@@ -107,23 +118,13 @@ export class ProductReturnService {
             },
           },
         }
-      : undefined;
+      : {};
 
     const returns = await this.prisma.productReturn.findMany({
       where,
-      orderBy: {
-        [sortBy]: order,
-      },
+      orderBy: { [sortBy]: order },
       skip: (page - 1) * limit,
-      take: Number(limit),
-      include: {
-        contract: {
-          include: {
-            partner: true,
-          },
-        },
-        reason: true,
-      },
+      take: limit,
     });
 
     const total = await this.prisma.productReturn.count({ where });
@@ -137,20 +138,22 @@ export class ProductReturnService {
   }
 
   async findOne(id: string) {
-    let returnedProduct = await this.prisma.productReturn.findUnique({
+    const productReturn = await this.prisma.productReturn.findUnique({
       where: { id },
       include: {
         contract: true,
         reason: true,
       },
-    })
-    if (!returnedProduct) throw new NotFoundException('Returned product not found');
-    return returnedProduct;
+    });
+
+    if (!productReturn) throw new NotFoundException('Product return not found');
+
+    return productReturn;
   }
 
   async remove(id: string, userId: string) {
     const existing = await this.prisma.productReturn.findUnique({ where: { id } });
-    if (!existing) throw new BadRequestException('Product return not found');
+    if (!existing) throw new NotFoundException('Product return not found');
 
     await this.prisma.productReturn.delete({ where: { id } });
 
@@ -160,8 +163,8 @@ export class ProductReturnService {
         recordId: id,
         actionType: 'DELETE',
         oldValue: existing,
-        comment: 'Product return deleted',
         userId,
+        comment: 'Product return deleted',
       },
     });
 

@@ -1,16 +1,26 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class PartnerService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createPartnerDto: CreatePartnerDto, userId: string) {
+  async create(dto: CreatePartnerDto, userId: string) {
+    const exists = await this.prisma.partner.findUnique({
+      where: { phoneNumber: dto.phoneNumber },
+    });
+    if (exists) throw new ConflictException('Phone number already in use');
+
     const partner = await this.prisma.partner.create({
-      data: { ...createPartnerDto, userId },
+      data: { ...dto, userId },
     });
 
     await this.prisma.actionHistory.create({
@@ -24,7 +34,7 @@ export class PartnerService {
       },
     });
 
-    return { message: 'Partner created successfully', partner};
+    return { message: 'Partner created successfully', data: partner };
   }
 
   async findAll(params: {
@@ -51,11 +61,9 @@ export class PartnerService {
         }
       : undefined;
 
-    const partners = await this.prisma.partner.findMany({
+    const data = await this.prisma.partner.findMany({
       where,
-      orderBy: {
-        [sortBy]: order,
-      },
+      orderBy: { [sortBy]: order },
       skip: (page - 1) * limit,
       take: Number(limit),
     });
@@ -63,7 +71,7 @@ export class PartnerService {
     const total = await this.prisma.partner.count({ where });
 
     return {
-      data: partners,
+      data,
       total,
       page,
       lastPage: Math.ceil(total / limit),
@@ -71,40 +79,54 @@ export class PartnerService {
   }
 
   async findOne(id: string) {
-    const partner = await this.prisma.partner.findUnique({ where: { id } });
-    if (!partner) {
-      throw new NotFoundException('Partner not found');
-    }
-    return partner;
+    const partner = await this.prisma.partner.findUnique({
+      where: { id },
+      include: {
+        purchases: true,
+        contracts: true,
+        payments: true,
+      },
+    });
+
+    if (!partner) throw new NotFoundException('Partner not found');
+
+    return partner ;
   }
 
-  async update(id: string, updatePartnerDto: UpdatePartnerDto, userId: string) {
-    const old = await this.prisma.partner.findUnique({ where: { id } });
-    if (!old) throw new BadRequestException('Partner not found');
+  async update(id: string, dto: UpdatePartnerDto, userId: string) {
+    const existing = await this.prisma.partner.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Partner not found');
 
-    const partner = await this.prisma.partner.update({
+    if (dto.phoneNumber && dto.phoneNumber !== existing.phoneNumber) {
+      const phoneUsed = await this.prisma.partner.findUnique({
+        where: { phoneNumber: dto.phoneNumber },
+      });
+      if (phoneUsed) throw new ConflictException('Phone number already in use');
+    }
+
+    const updated = await this.prisma.partner.update({
       where: { id },
-      data: { ...updatePartnerDto, updatedAt: new Date() },
+      data: { ...dto, updatedAt: new Date() },
     });
 
     await this.prisma.actionHistory.create({
       data: {
         tableName: 'partner',
         actionType: 'UPDATE',
-        recordId: partner.id,
-        oldValue: old,
-        newValue: partner,
+        recordId: id,
+        oldValue: existing,
+        newValue: updated,
         userId,
         comment: 'Partner updated',
       },
     });
 
-    return { message: 'Partner updated successfully', partner};
+    return { message: 'Partner updated successfully', data: updated };
   }
 
   async remove(id: string, userId: string) {
-    const old = await this.prisma.partner.findUnique({ where: { id } });
-    if (!old) throw new BadRequestException('Partner not found');
+    const existing = await this.prisma.partner.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Partner not found');
 
     await this.prisma.partner.delete({ where: { id } });
 
@@ -112,8 +134,8 @@ export class PartnerService {
       data: {
         tableName: 'partner',
         actionType: 'DELETE',
-        recordId: old.id,
-        oldValue: old,
+        recordId: existing.id,
+        oldValue: existing,
         userId,
         comment: 'Partner deleted',
       },

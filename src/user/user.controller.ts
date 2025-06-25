@@ -13,7 +13,7 @@ import {
   Query
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto, loginDto, newPasswordDto, otps, RegisterDto } from './dto/create-user.dto';
+import { CreateUserDto, loginDto, RegisterDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
@@ -138,17 +138,6 @@ export class UserController {
   }
 
 
-
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Reset password' })
-  @ApiBody({ schema: { example: { newPassword: 'newpass123' } } })
-  @Patch('reset-password')
-  resetPassword(@Request() req, @Body() data: newPasswordDto) {
-    const userId = req.user.id;
-    return this.userService.resetPassword(data, userId);
-  }
-
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by ID' })
@@ -173,24 +162,9 @@ export class UserController {
     return this.userService.remove(id);
   }
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Send OTP to reset password' })
-  @Post('/send-otp-reset')
-  sendResetOtp(@Request() req) {
-    const userId = req.user.id;
-    return this.userService.sendOtpToResetPassword(userId);
-  }
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Verify OTP to reset password' })
-  @ApiBody({ schema: { example: { otp: '123456' } } })
-  @Post('/verify-otp-reset')
-  verifyResetOtp(@Request() req, @Body() body: otps) {
-    const userId = req.user.id;
-    return this.userService.verifyOtpToReset(body, userId);
-  }
+
+
 
 
 }

@@ -42,22 +42,20 @@ export class ReasonService {
       limit = 10,
     } = params;
 
-    const where: Prisma.ReasonWhereInput | undefined = search
+    const where: Prisma.ReasonWhereInput = search
       ? {
           reasonText: {
             contains: search,
             mode: 'insensitive',
           },
         }
-      : undefined;
+      : {};
 
     const reasons = await this.prisma.reason.findMany({
       where,
-      orderBy: {
-        [sortBy]: order,
-      },
+      orderBy: { [sortBy]: order },
       skip: (page - 1) * limit,
-      take: Number(limit),
+      take: limit,
     });
 
     const total = await this.prisma.reason.count({ where });
@@ -71,16 +69,22 @@ export class ReasonService {
   }
 
   async findOne(id: string) {
-    let reason = await this.prisma.reason.findUnique({
-      where: { id },
+    const reason = await this.prisma.reason.findUnique({
+      where: { id }
     });
-    if (!reason) throw new NotFoundException('Reason not found');
-    return reason
+
+    if (!reason) {
+      throw new NotFoundException('Reason not found');
+    }
+
+    return reason;
   }
 
   async update(id: string, dto: UpdateReasonDto, userId: string) {
-    const reason = await this.prisma.reason.findUnique({ where: { id } });
-    if (!reason) throw new BadRequestException('Reason not found');
+    const existing = await this.prisma.reason.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Reason not found');
+    }
 
     const updated = await this.prisma.reason.update({
       where: { id },
@@ -96,7 +100,7 @@ export class ReasonService {
         recordId: updated.id,
         actionType: 'UPDATE',
         userId,
-        oldValue: reason,
+        oldValue: existing,
         newValue: updated,
         comment: 'Reason updated',
       },
@@ -106,8 +110,10 @@ export class ReasonService {
   }
 
   async remove(id: string, userId: string) {
-    const oldReason = await this.prisma.reason.findUnique({ where: { id } });
-    if (!oldReason) throw new BadRequestException('Reason not found');
+    const existing = await this.prisma.reason.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Reason not found');
+    }
 
     await this.prisma.reason.delete({ where: { id } });
 
@@ -117,7 +123,7 @@ export class ReasonService {
         recordId: id,
         actionType: 'DELETE',
         userId,
-        oldValue: oldReason,
+        oldValue: existing,
         comment: 'Reason deleted',
       },
     });

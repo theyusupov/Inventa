@@ -51,26 +51,20 @@ export class ProductService {
       limit = 10,
     } = params;
 
-    const where: Prisma.ProductWhereInput | undefined = search
+    const where: Prisma.ProductWhereInput = search
       ? {
           name: {
             contains: search,
             mode: 'insensitive',
           },
         }
-      : undefined;
+      : {};
 
     const products = await this.prisma.product.findMany({
       where,
-      orderBy: {
-        [sortBy]: order,
-      },
+      orderBy: { [sortBy]: order },
       skip: (page - 1) * limit,
-      take: Number(limit),
-      include: {
-        category: true,
-        user: true,
-      },
+      take: limit,
     });
 
     const total = await this.prisma.product.count({ where });
@@ -83,13 +77,18 @@ export class ProductService {
     };
   }
 
-
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { category: true, user: true, productImages: true },
+      include: {
+        category: true,
+        user: true,
+        productImages: true,
+      },
     });
+
     if (!product) throw new NotFoundException('Product not found');
+
     return product;
   }
 
@@ -114,12 +113,12 @@ export class ProductService {
       },
     });
 
-    return { message: 'Product updated successfully', product};
+    return { message: 'Product updated successfully', product };
   }
 
   async remove(id: string, userId: string) {
-    const oldData = await this.prisma.product.findUnique({ where: { id } });
-    if (!oldData) throw new BadRequestException('Product not found');
+    const existing = await this.prisma.product.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Product not found');
 
     await this.prisma.product.delete({ where: { id } });
 
@@ -128,7 +127,7 @@ export class ProductService {
         tableName: 'product',
         recordId: id,
         actionType: 'DELETE',
-        oldValue: oldData,
+        oldValue: existing,
         userId,
         comment: 'Product deleted',
       },

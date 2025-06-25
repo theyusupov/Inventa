@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { Prisma } from 'generated/prisma';
@@ -7,9 +7,9 @@ import { Prisma } from 'generated/prisma';
 export class CategoryService {
   constructor(private readonly prisma: PrismaService) {}
 
-async create(createCategoryDto: CreateCategoryDto, userId: string) {
+  async create(dto: CreateCategoryDto, userId: string) {
     const category = await this.prisma.category.create({
-      data: createCategoryDto,
+      data: dto,
     });
 
     await this.prisma.actionHistory.create({
@@ -23,62 +23,77 @@ async create(createCategoryDto: CreateCategoryDto, userId: string) {
       },
     });
 
-    return { message: 'Category created successfully', category};
-}
+    return {
+      message: 'Category created successfully',
+      data: category,
+    };
+  }
 
-async findAll(params: {
-  search?: string;
-  sortBy?: keyof Prisma.CategoryOrderByWithRelationInput;
-  order?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-}) {
-  const {
-    search,
-    sortBy = 'createdAt',
-    order = 'asc',
-    page = 1,
-    limit = 10,
-  } = params;
+  async findAll(params: {
+    search?: string;
+    sortBy?: keyof Prisma.CategoryOrderByWithRelationInput;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      sortBy = 'createdAt',
+      order = 'asc',
+      page = 1,
+      limit = 10,
+    } = params;
 
-  const where: Prisma.CategoryWhereInput = search
-    ? {
-        name: {
-          contains: search,
-          mode: Prisma.QueryMode.insensitive,
-        },
-      }
-    : {};
+    const where: Prisma.CategoryWhereInput = search
+      ? {
+          name: {
+            contains: search,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        }
+      : {};
 
-  const orderBy: Prisma.CategoryOrderByWithRelationInput = {
-    [sortBy]: order as Prisma.SortOrder,
-  };
+    const orderBy: Prisma.CategoryOrderByWithRelationInput = {
+      [sortBy]: order as Prisma.SortOrder,
+    };
 
-  const categories = await this.prisma.category.findMany({
-    where,
-    orderBy,
-    skip: (page - 1) * limit,
-    take: limit,
-  });
+    const categories = await this.prisma.category.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+    });
 
-  const total = await this.prisma.category.count({ where });
+    const total = await this.prisma.category.count({ where });
 
-  return {
-    data: categories,
-    total,
-    page,
-    lastPage: Math.ceil(total / limit),
-  };
-}
+    return {
+      data: categories,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
+  }
 
   async findOne(id: string) {
-    const category = await this.prisma.category.findUnique({ where: { id } });
-    if (!category) throw new NotFoundException('Category not found');
-    return category;
+    const category = await this.prisma.category.findUnique({
+      where: { id }
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    return {
+      message: 'Category fetched successfully',
+      data: category,
+    };
   }
 
   async update(id: string, data: Partial<CreateCategoryDto>, userId: string) {
-    const oldCategory = await this.findOne(id);
+    const oldCategory = await this.prisma.category.findUnique({ where: { id } });
+    if (!oldCategory) {
+      throw new NotFoundException('Category not found');
+    }
 
     const category = await this.prisma.category.update({
       where: { id },
@@ -100,11 +115,17 @@ async findAll(params: {
       },
     });
 
-    return { message: 'Category updated successfully', category };
+    return {
+      message: 'Category updated successfully',
+      data: category,
+    };
   }
 
   async remove(id: string, userId: string) {
-    const oldCategory = await this.findOne(id);
+    const oldCategory = await this.prisma.category.findUnique({ where: { id } });
+    if (!oldCategory) {
+      throw new NotFoundException('Category not found');
+    }
 
     await this.prisma.category.delete({ where: { id } });
 
@@ -119,6 +140,8 @@ async findAll(params: {
       },
     });
 
-    return { message: 'Category deleted successfully' };
+    return {
+      message: 'Category deleted successfully',
+    };
   }
 }

@@ -32,7 +32,7 @@ export class SalaryController {
   constructor(private readonly salaryService: SalaryService) {}
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.OWNER])
+  @Roles([UserRole.OWNER, UserRole.STAFF])
   @Post()
   @ApiOperation({ summary: 'Create new salary' })
   @ApiBody({
@@ -80,7 +80,7 @@ findAll(
 
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.OWNER])
+  @Roles([UserRole.OWNER,  UserRole.STAFF])
   @Get(':id')
   @ApiOperation({ summary: 'Get one salary by ID' })
   @ApiParam({ name: 'id', description: 'Salary ID' })
@@ -89,7 +89,7 @@ findAll(
   }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.OWNER])
+  @Roles([UserRole.OWNER,  UserRole.STAFF])
   @Patch(':id')
   @ApiOperation({ summary: 'Update salary by ID' })
   @ApiParam({ name: 'id', description: 'Salary ID' })
@@ -111,7 +111,7 @@ findAll(
   }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.OWNER])
+  @Roles([UserRole.OWNER,  UserRole.STAFF])
   @Delete(':id')
   @ApiOperation({ summary: 'Delete salary by ID' })
   @ApiParam({ name: 'id', description: 'Salary ID' })

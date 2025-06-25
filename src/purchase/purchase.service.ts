@@ -7,8 +7,8 @@ import { Prisma } from 'generated/prisma';
 export class PurchaseService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createPurchaseDto: CreatePurchaseDto, userId: string) {
-    const { productId, partnerId } = createPurchaseDto;
+  async create(dto: CreatePurchaseDto, userId: string) {
+    const { productId, partnerId, buyPrice, quantity } = dto;
 
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
     if (!product) throw new BadRequestException('Product not found');
@@ -16,14 +16,28 @@ export class PurchaseService {
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
+    const finalBuyPrice = buyPrice ?? product.buyPrice;
+    const finalQuantity = quantity ?? product.quantity;
+
     const purchase = await this.prisma.purchase.create({
-      data: { ...createPurchaseDto, buyPrice:createPurchaseDto.buyPrice || product.buyPrice, quantity: createPurchaseDto.quantity || product.quantity, userId },
+      data: {
+        ...dto,
+        buyPrice: finalBuyPrice,
+        quantity: finalQuantity,
+        userId,
+      },
     });
 
-    await this.prisma.partner.update({where:{id:partner.id},data:{balance:partner.balance+product.buyPrice*product.quantity}})
+    const increaseAmount = finalBuyPrice * finalQuantity;
 
- 
-  await this.prisma.actionHistory.create({
+    await this.prisma.partner.update({
+      where: { id: partner.id },
+      data: {
+        balance: partner.balance + increaseAmount,
+      },
+    });
+
+    await this.prisma.actionHistory.create({
       data: {
         tableName: 'purchase',
         recordId: purchase.id,
@@ -32,8 +46,9 @@ export class PurchaseService {
         newValue: purchase,
         comment: 'Purchase created',
       },
-  });
-  return { message: 'Purchase created successfully', purchase };
+    });
+
+    return { message: 'Purchase created successfully', purchase };
   }
 
   async findAll(params: {
@@ -51,7 +66,7 @@ export class PurchaseService {
       limit = 10,
     } = params;
 
-    const where: Prisma.PurchaseWhereInput | undefined = search
+    const where: Prisma.PurchaseWhereInput = search
       ? {
           partner: {
             is: {
@@ -62,20 +77,13 @@ export class PurchaseService {
             },
           },
         }
-      : undefined;
+      : {};
 
     const purchases = await this.prisma.purchase.findMany({
       where,
-      orderBy: {
-        [sortBy]: order,
-      },
+      orderBy: { [sortBy]: order },
       skip: (page - 1) * limit,
-      take: Number(limit),
-      include: {
-        product: true,
-        partner: true,
-        user: true,
-      },
+      take: limit,
     });
 
     const total = await this.prisma.purchase.count({ where });
@@ -88,26 +96,34 @@ export class PurchaseService {
     };
   }
 
-
   async findOne(id: string) {
-    let purchase = await this.prisma.purchase.findUnique({ where: { id } });
+    const purchase = await this.prisma.purchase.findUnique({
+      where: { id },
+      include: {
+        product: true,
+        partner: true,
+        user: true,
+      },
+    });
+
     if (!purchase) throw new NotFoundException('Purchase not found');
-    return purchase
+
+    return purchase;
   }
 
   async remove(id: string, userId: string) {
-    const oldPurchase = await this.prisma.purchase.findUnique({ where: { id } });
-    if (!oldPurchase) throw new NotFoundException('Purchase not found');
+    const existing = await this.prisma.purchase.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Purchase not found');
 
     await this.prisma.purchase.delete({ where: { id } });
 
     await this.prisma.actionHistory.create({
       data: {
         tableName: 'purchase',
-        recordId: oldPurchase.id,
+        recordId: id,
         actionType: 'DELETE',
+        oldValue: existing,
         userId,
-        oldValue: oldPurchase,
         comment: 'Purchase deleted',
       },
     });

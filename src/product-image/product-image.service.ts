@@ -5,10 +5,17 @@ import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class ProductImageService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateProductImageDto, file: Express.Multer.File, userId: string) {
-    if (!file) throw new NotFoundException('Image file is required');
+    if (!file?.filename) {
+      throw new BadRequestException('Image file is required');
+    }
+
+    const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
 
     const newImage = await this.prisma.productImage.create({
       data: {
@@ -46,7 +53,7 @@ export class ProductImageService {
       limit = 10,
     } = params;
 
-    const where: Prisma.ProductImageWhereInput | undefined = search
+    const where: Prisma.ProductImageWhereInput = search
       ? {
           product: {
             is: {
@@ -57,18 +64,13 @@ export class ProductImageService {
             },
           },
         }
-      : undefined;
+      : {};
 
     const productImages = await this.prisma.productImage.findMany({
       where,
-      orderBy: {
-        [sortBy]: order,
-      },
+      orderBy: { [sortBy]: order },
       skip: (page - 1) * limit,
-      take: Number(limit),
-      include: {
-        product: true,
-      },
+      take: limit,
     });
 
     const total = await this.prisma.productImage.count({ where });
@@ -81,10 +83,11 @@ export class ProductImageService {
     };
   }
 
-
   async remove(id: string, userId: string) {
     const existing = await this.prisma.productImage.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Image not found');
+    if (!existing) {
+      throw new NotFoundException('Image not found');
+    }
 
     await this.prisma.productImage.delete({ where: { id } });
 

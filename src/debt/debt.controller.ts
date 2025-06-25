@@ -24,28 +24,6 @@ import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swag
 export class DebtController {
   constructor(private readonly debtService: DebtService) {}
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF, UserRole.OWNER])
-  // @Post()
-  // @ApiOperation({ summary: 'Create new debt' })
-  // @ApiBody({
-  //   type: CreateDebtDto,
-  //   examples: {
-  //     example1: {
-  //       summary: 'Basic Debt Creation',
-  //       value: {
-  //         total: 1200000,
-  //         repaymentPeriod: 6,
-  //         contractId: 'a6c742e0-19c9-4ef8-812e-f7c59b6b4aa2'
-  //       }
-  //     }
-  //   }
-  // })
-  // create(@Body() dto: CreateDebtDto, @Request() req) {
-  //   const userId = req.user.id;
-  //   return this.debtService.create(dto, userId);
-  // }
-
 @UseGuards(JwtAuthGuard, JwtRoleGuard)
 @Roles([UserRole.STAFF, UserRole.OWNER])
 @Get()
@@ -91,25 +69,4 @@ findAll(
     return this.debtService.remove(id, userId);
   }
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF, UserRole.OWNER])
-  // @Patch(':id')
-  // @ApiOperation({ summary: 'Update a debt by ID' })
-  // @ApiParam({ name: 'id', description: 'Debt ID' })
-  // @ApiBody({
-  //   type: UpdateDebtDto,
-  //   examples: {
-  //     example1: {
-  //       summary: 'Update total and repaymentPeriod',
-  //       value: {
-  //         total: 1000000,
-  //         repaymentPeriod: 8
-  //       }
-  //     }
-  //   }
-  // })
-  // update(@Param('id') id: string, @Body() dto: UpdateDebtDto, @Request() req) {
-  //   const userId = req.user.id;
-  //   return this.debtService.update(id, dto, userId);
-  // }
 }
