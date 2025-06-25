@@ -24,6 +24,10 @@ export class PaymentService {
     const newRemainingMonths = remainingMonths - monthsPaid;
     const newTotal = debt.total - payment.amount;
     await this.prisma.debt.update({ where: { id: payment.debtId }, data: { total: newTotal, remainingMonths: newRemainingMonths} });
+    const partner = await this.prisma.partner.findFirst({ where: { id: dto.partnerId } });
+    if(dto.type==='OUT'&&partner?.role==='CUSTOMER'||dto.type==='IN'&&partner?.role==='SELLER'){
+      throw new BadRequestException("Not matched payment type and partners role")
+    }
 
     await this.prisma.actionHistory.create({
       data: {
@@ -37,12 +41,16 @@ export class PaymentService {
     });
 
     const contractCheck = await this.prisma.debt.findFirst({ where: { id: dto.debtId } });
-    const partner = await this.prisma.partner.findFirst({ where: { id: dto.partnerId } });
     if (contractCheck?.remainingMonths===0&&contractCheck?.total===0){
      await this.prisma.contract.update({where:{id:debt.contractId},data:{status:"COMPLETED"}})
     }
 
-    await this.prisma.partner.update({where:{id:partner?.id},data:{balance:partner?.balance!+dto.amount}})
+    if(payment.type==='OUT'){
+      await this.prisma.partner.update({where:{id:partner?.id},data:{balance:partner?.balance!-dto.amount}})
+    }
+    if(payment.type==='IN'){
+        await this.prisma.partner.update({where:{id:partner?.id},data:{balance:partner?.balance!+dto.amount}})
+    }
     return { message: 'Payment created successfully', payment };
   }
 
@@ -112,21 +120,32 @@ export class PaymentService {
     const debt = await this.prisma.debt.findUnique({ where: { id: existing.debtId } });
     if (!debt) throw new NotFoundException('Debt not found');
 
-    let contract = await this.prisma.contract.findFirst({where:{id:debt.contractId}})
-    if (contract?.status==='CANCELLED'||contract?.status==='COMPLETED') throw new BadRequestException("This contract is invalid.");
+    const contract = await this.prisma.contract.findUnique({ where: { id: debt.contractId } });
+    if (contract?.status === 'CANCELLED' || contract?.status === 'COMPLETED') {
+      throw new BadRequestException("This contract is invalid.");
+    }
 
+    const partner = await this.prisma.partner.findUnique({ where: { id: existing.partnerId } });
+    if (!partner) throw new NotFoundException("Partner not found");
+
+    const type = dto.type ?? existing.type;
+
+    if (type === 'OUT' && partner.role === 'CUSTOMER') {
+      throw new BadRequestException("CUSTOMER bilan OUT to'lov bo'lmaydi");
+    }
+
+    if (type === 'IN' && partner.role === 'SELLER') {
+      throw new BadRequestException("SELLER bilan IN to'lov bo'lmaydi");
+    }
 
     const oldAmount = existing.amount ?? 0;
     const oldMonthsPaid = existing.monthsPaid ?? 0;
+
     const newAmount = dto.amount ?? oldAmount;
     const newMonthsPaid = dto.monthsPaid ?? oldMonthsPaid;
 
     const amountDiff = newAmount - oldAmount;
     const monthsPaidDiff = newMonthsPaid - oldMonthsPaid;
-
-    const oldRemainingMonths = debt.remainingMonths ?? 0;
-    const newTotal = (debt.total ?? 0) - amountDiff;
-    const newRemainingMonths = oldRemainingMonths - monthsPaidDiff;
 
     const updated = await this.prisma.payment.update({
       where: { id },
@@ -136,28 +155,27 @@ export class PaymentService {
     const updatedDebt = await this.prisma.debt.update({
       where: { id: debt.id },
       data: {
-        total: newTotal,
-        remainingMonths: newRemainingMonths,
+        total: debt.total - amountDiff,
+        remainingMonths: debt.remainingMonths! - monthsPaidDiff,
       },
     });
 
-    const partner = await this.prisma.partner.findUnique({
-      where: { id: existing.partnerId },
-    });
-
-    if (!partner) throw new NotFoundException("Partner not found");
+    const newBalance =
+      type === 'OUT'
+        ? partner.balance - amountDiff
+        : partner.balance + amountDiff;
 
     await this.prisma.partner.update({
       where: { id: partner.id },
       data: {
-        balance: partner.balance + amountDiff
-      }
+        balance: newBalance,
+      },
     });
 
     if ((updatedDebt.total ?? 0) <= 0 && (updatedDebt.remainingMonths ?? 0) <= 0) {
-      const contract = await this.prisma.contract.update({
+      await this.prisma.contract.update({
         where: { id: debt.contractId },
-        data: { status: "COMPLETED" }
+        data: { status: "COMPLETED" },
       });
     }
 
