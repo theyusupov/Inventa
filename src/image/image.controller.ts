@@ -5,13 +5,15 @@ import { UpdateImageDto } from './dto/update-image.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerUploadUserImage } from 'src/shared/multer';
 import { ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Controller('image')
 export class ImageController {
   constructor(private readonly imageService: ImageService) {}
 
     @Post('/upload-image')
-    @ApiOperation({ summary: 'Upload user image' })
+    @ApiOperation({ summary: 'Upload  image' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
       schema: {
@@ -29,30 +31,19 @@ export class ImageController {
       if (!image) return 'Not image uploaded';
       return { image: image.filename };
     }
-    
 
-  @Post()
-  create(@Body() createImageDto: CreateImageDto) {
-    return this.imageService.create(createImageDto);
-  }
+    @Get('get-images')
+    @ApiOperation({ summary: 'Get images' })
+    getImage() {
+      const directoryPath = path.join(__dirname, '../../images');
 
-  @Get()
-  findAll() {
-    return this.imageService.findAll();
-  }
+      const files = fs.readdirSync(directoryPath);
+      const fileUrls = files.map((file) => ({
+        filename: file,
+        url: file,
+      }));
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.imageService.findOne(+id);
-  }
+      return fileUrls;
+    }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateImageDto: UpdateImageDto) {
-    return this.imageService.update(+id, updateImageDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.imageService.remove(+id);
-  }
 }

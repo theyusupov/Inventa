@@ -3,6 +3,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Prisma } from 'generated/prisma';
+import * as path from 'path';
+import * as fs from 'fs/promises';
 
 @Injectable()
 export class ProductService {
@@ -120,8 +122,19 @@ export class ProductService {
     const existing = await this.prisma.product.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Product not found');
 
-    await this.prisma.product.delete({ where: { id } });
 
+    await this.prisma.purchase.deleteMany({ where: { productId: id } });
+    await this.prisma.contract.deleteMany({ where: { productId: id } });
+
+    if (existing.image) {
+      const filePath = path.join(__dirname, '../../images', existing.image);
+      try {
+        await fs.unlink(filePath);
+    } catch {}
+    }
+
+
+    await this.prisma.product.delete({ where: { id } });
     await this.prisma.actionHistory.create({
       data: {
         tableName: 'product',

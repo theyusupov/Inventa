@@ -9,6 +9,8 @@ import {
   UseGuards,
   Request,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -16,7 +18,8 @@ import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 import { JwtRoleGuard } from 'src/shared/guards/role.guard';
 import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Category')
 @Controller('category')
@@ -72,8 +75,6 @@ export class CategoryController {
     return this.categoryService.findAll({ search, order, page:parseInt(page.toString(), 10), limit:parseInt(limit.toString(), 10) });
   }
 
-
-
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get(':id')
@@ -85,28 +86,27 @@ export class CategoryController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Patch(':id')
+  @UseInterceptors(FileInterceptor('image')) 
   @ApiOperation({ summary: 'Update category by ID' })
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
-    type: CreateCategoryDto,
-    description: 'Update category',
-    examples: {
-      example1: {
-        summary: 'Change name',
-        value: {
-          name: 'Electronics',
-          repaymentPeriod: 3,
-          image: '12333497328.png'
-        },
-      },
-    },
-  })
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        repaymentPeriod: { type: 'number' },
+        image: {
+          type: 'string',
+          format: 'binary',
+  }, },},})
   update(
     @Param('id') id: string,
     @Body() dto: Partial<CreateCategoryDto>,
     @Request() req,
+    @UploadedFile() image?: Express.Multer.File,
   ) {
     let userId = req.user.id;
-    return this.categoryService.update(id, dto, userId);
+    return this.categoryService.update(id, dto, userId, image);
   }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)

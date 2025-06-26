@@ -150,51 +150,41 @@ export class UserService {
     return user;
   }
 
-  async updateImage(id: string, image: Express.Multer.File) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user || !user.image) throw new BadRequestException('User not found or image missing');
-
-    const filePath = path.join(__dirname, '../../userImage', user.image);
-    try {
-      await fs.unlink(filePath);
-    } catch {}
-
-    const updated = await this.prisma.user.update({
-      where: { id },
-      data: { image: image.filename },
-    });
-
-    await this.prisma.actionHistory.create({
-      data: {
-        tableName: 'user',
-        recordId: id,
-        actionType: 'UPDATE',
-        userId: id,
-        oldValue: user,
-        newValue: updated,
-        comment: 'User image updated',
-      },
-    });
-
-    return { message: 'Image updated successfully', updated };
-  }
-
-  async update(id: string, dto: UpdateUserDto) {
+  async update(id: string, dto: UpdateUserDto, file?: Express.Multer.File) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
+    // Telefon raqami tekshiruvi
     if (dto.phoneNumber && dto.phoneNumber !== user.phoneNumber) {
-      const existingPhone = await this.prisma.user.findUnique({ where: { phoneNumber: dto.phoneNumber } });
+      const existingPhone = await this.prisma.user.findUnique({
+        where: { phoneNumber: dto.phoneNumber },
+      });
       if (existingPhone) throw new ConflictException('Phone number already in use');
     }
+
+    // Agar yangi rasm bo‘lsa eski faylni o‘chir
+    let imageName = user.image;
+    if (file) {
+      if (user.image) {
+        const oldPath = path.join(__dirname, '../../images', user.image);
+        try {
+          await fs.unlink(oldPath);
+        } catch {}
+      }
+      imageName = file.filename;
+    }
+
+    // Parolni xeshlash
+    const hashedPassword = dto.password
+      ? await bcrypt.hash(dto.password, 10)
+      : user.password;
 
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
         ...dto,
-        password: dto.password
-          ? await bcrypt.hash(dto.password, 10)
-          : user.password,
+        image: imageName,
+        password: hashedPassword,
       },
     });
 
@@ -227,7 +217,7 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
 
     if (user.image) {
-      const filePath = path.join(__dirname, '../../userImage', user.image);
+      const filePath = path.join(__dirname, '../../images', user.image);
       try {
         await fs.unlink(filePath);
       } catch {}

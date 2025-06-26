@@ -2,6 +2,9 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { Prisma } from 'generated/prisma';
+import * as path from 'path';
+import * as fs from 'fs/promises';
+
 
 @Injectable()
 export class CategoryService {
@@ -89,16 +92,35 @@ export class CategoryService {
     };
   }
 
-  async update(id: string, data: Partial<CreateCategoryDto>, userId: string) {
+  async update(
+    id: string,
+    data: Partial<CreateCategoryDto>,
+    userId: string,
+    image?: Express.Multer.File,
+  ) {
     const oldCategory = await this.prisma.category.findUnique({ where: { id } });
     if (!oldCategory) {
       throw new NotFoundException('Category not found');
+    }
+
+    let imageFileName = oldCategory.image;
+
+    if (image) {
+      if (oldCategory.image) {
+        const filePath = path.join(__dirname, '../../images', oldCategory.image);
+        try {
+          await fs.unlink(filePath);
+        } catch (error) {
+        }
+      }
+      imageFileName = image.filename;
     }
 
     const category = await this.prisma.category.update({
       where: { id },
       data: {
         ...data,
+        image: imageFileName,
         updatedAt: new Date(),
       },
     });
@@ -117,7 +139,7 @@ export class CategoryService {
 
     return {
       message: 'Category updated successfully',
-      data: category,
+      category,
     };
   }
 
@@ -126,6 +148,13 @@ export class CategoryService {
     if (!oldCategory) {
       throw new NotFoundException('Category not found');
     }
+
+    if (oldCategory.image) {
+        const filePath = path.join(__dirname, '../../images', oldCategory.image);
+        try {
+          await fs.unlink(filePath);
+      } catch {}
+      }
 
     await this.prisma.category.delete({ where: { id } });
 

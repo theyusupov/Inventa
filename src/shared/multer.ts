@@ -10,8 +10,7 @@ const createMulterStorage = (endpoint:string)=>{
     })
 }
 
-export const multerUploadUserImage = createMulterStorage('./userImage')
-export const multerUploadProductImages = createMulterStorage('./productImage')
+export const multerUploadUserImage = createMulterStorage('./images')
 
 
 

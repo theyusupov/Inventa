@@ -37,28 +37,6 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-
-
-  @Patch('/update-image/:id')
-  @ApiOperation({ summary: 'Update user image by ID' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        image: {
-          type: 'string',
-          format: 'binary'
-        }
-      }
-    }
-  })
-  @UseInterceptors(FileInterceptor('image', { storage: multerUploadUserImage }))
-  updateImage(@Param('id') id: string, @UploadedFile() image: Express.Multer.File) {
-    if (!image) return 'Not image uploaded';
-    return this.userService.updateImage(id, image);
-  }
-
   @Post('/create-user')
   @ApiOperation({ summary: 'Register new user' })
   @ApiBody({

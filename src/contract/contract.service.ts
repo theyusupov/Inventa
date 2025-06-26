@@ -24,6 +24,8 @@ export class ContractService {
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
+    if(partner.role==='SELLER') throw new BadRequestException(`You can't make contract with ${partner.role.toLowerCase()}s`);
+
     if (!product.isActive) throw new BadRequestException("This product isn't active at the moment");
     if (product.quantity < quantity) throw new BadRequestException('Product quantity is not enough');
 
@@ -156,102 +158,22 @@ export class ContractService {
     return contract;
   }
 
-  async update(id: string, dto: CreateContractDto, userId: string) {
+  async remove(id: string, userId: string) {
     const existing = await this.prisma.contract.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Contract not found');
 
-    const { productId, partnerId, quantity, repaymentPeriod, sellPrice: dtoSellPrice } = dto;
-
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
-    if (!product) throw new BadRequestException('Product not found');
-
-    const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
-    if (!partner) throw new BadRequestException('Partner not found');
-
-    if (!product.isActive) throw new BadRequestException("This product isn't active at the moment");
-    if (product.quantity < quantity) throw new BadRequestException('Product quantity is not enough');
-
-    const isSeller = partner.role === 'SELLER';
-    const price = isSeller ? product.buyPrice : dtoSellPrice ?? product.sellPrice;
-    const usedQuantity = isSeller ? product.quantity : quantity;
-    const total = price * usedQuantity;
-    const monthlyPayment = total / (repaymentPeriod??NaN);
-
-    const updated = await this.prisma.contract.update({
-      where: { id },
-      data: {
-        ...dto,
-        quantity: usedQuantity,
-        userId,
-        status: 'ONGOING',
-        startTotal: total,
-        monthlyPayment,
-        ...(isSeller ? { buyPrice: price } : { sellPrice: price }),
-      },
-    });
-
-    const purchase = await this.prisma.purchase.findFirst({ where: { productId } });
-    if (!purchase) throw new BadRequestException('Purchase not found');
-
-    if (!isSeller) {
-      const newQuantity = product.quantity - quantity;
-
-      await this.prisma.product.update({
-        where: { id: productId },
-        data: {
-          quantity: newQuantity,
-          isActive: newQuantity > 0,
-        },
-      });
-
-      await this.prisma.purchase.update({
-        where: { id: purchase.id },
-        data: { quantity: newQuantity },
-      });
-
-      await this.prisma.partner.update({
-        where: { id: partnerId },
-        data: { balance: partner.balance - total },
-      });
-    }
-
-    const oldDebt = await this.prisma.debt.findFirst({ where: { contractId: id } });
-    if (oldDebt) {
-      await this.prisma.debt.delete({ where: { id: oldDebt.id } });
-    }
-
-    const newDebt = await this.prisma.debt.create({
-      data: {
-        total,
-        remainingMonths: repaymentPeriod,
-        contractId: id,
-      },
-    });
-
+    await this.prisma.contract.delete({ where: { id } });
     await this.prisma.actionHistory.create({
       data: {
         tableName: 'contract',
-        actionType: 'UPDATE',
-        recordId: updated.id,
+        recordId: id,
+        actionType: 'DELETE',
         oldValue: existing,
-        newValue: updated,
-        comment: 'Contract updated',
         userId,
+        comment: 'Contract deleted',
       },
     });
 
-    await this.prisma.actionHistory.create({
-      data: {
-        tableName: 'debt',
-        actionType: 'UPDATE',
-        recordId: newDebt.id,
-        oldValue: oldDebt ?? undefined,
-        newValue: newDebt,
-        comment: 'Debt updated',
-        userId,
-      },
-    });
-
-    return { message: 'Contract updated successfully', contract: updated };
+    return { message: 'Contract deleted successfully' };
   }
 }

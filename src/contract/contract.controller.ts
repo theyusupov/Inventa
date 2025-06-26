@@ -67,28 +67,14 @@ export class ContractController {
     return this.contractService.findOne(id);
   }
 
+
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update contract by ID' })
-  @ApiParam({ name: 'id', description: 'Contract ID' })
-  @ApiBody({
-    type: UpdateContractDto,
-    examples: {
-      example1: {
-        summary: 'Update Contract',
-        value: {
-          quantity: 6,
-          repaymentPeriod: 8,
-          sellPrice: 270000,
-          status: 'CANCELLED'
-        },
-      },
-    },
-  })
-  update(@Param('id') id: string, @Body() dto: UpdateContractDto, @Request() req) {
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete contract by ID' })
+  remove(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
-    return this.contractService.update(id, dto as CreateContractDto, userId);
+    return this.contractService.remove(id, userId);
   }
 }
  

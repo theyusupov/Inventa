@@ -27,8 +27,8 @@ import {
 
 
 
-@ApiTags('Payments')
-@Controller('payments')
+@ApiTags('Payment')
+@Controller('payment')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 

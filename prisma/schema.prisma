@@ -107,7 +107,7 @@ model Partner {
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user         User? @relation(fields: [userId], references: [id])
+  user         User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   purchases    Purchase[]
   contracts    Contract[]
@@ -148,8 +148,8 @@ model Product {
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user         User? @relation(fields: [userId], references: [id])
-  category     Category @relation(fields: [categoryId], references: [id])
+  user         User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   purchases                Purchase[]
   contracts                Contract[]
@@ -167,9 +167,9 @@ model Purchase {
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user       User? @relation(fields: [userId], references: [id])
-  partner    Partner @relation(fields: [partnerId], references: [id])
-  product    Product @relation(fields: [productId], references: [id])
+  user       User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner    Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
 }
 
@@ -189,9 +189,9 @@ model Contract {
   updatedAt    DateTime?
  
 
-  user       User? @relation(fields: [userId], references: [id])
-  partner    Partner @relation(fields: [partnerId], references: [id])
-  product    Product @relation(fields: [productId], references: [id])
+  user       User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner    Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   debts      Debt[]
   returns    ProductReturn[]              
@@ -207,7 +207,7 @@ model Debt {
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  contract    Contract @relation(fields: [contractId], references: [id])
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   payments   Payment[]
 }
@@ -233,8 +233,8 @@ model ProductReturn {
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  reason            Reason @relation(fields: [reasonId], references: [id])
-  contract          Contract @relation(fields: [contractId], references: [id])
+  reason            Reason @relation(fields: [reasonId], references: [id], onDelete: Cascade)
+  contract          Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
 
@@ -251,9 +251,9 @@ model Payment {
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  debt          Debt? @relation(fields: [debtId], references: [id])
-  partner       Partner @relation(fields: [partnerId], references: [id])
-  user          User? @relation(fields: [userId], references: [id])
+  debt          Debt? @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  partner       Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  user          User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 
@@ -266,7 +266,7 @@ model Salary {
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  user          User? @relation(fields: [userId], references: [id])
+  user          User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 
@@ -282,5 +282,5 @@ model ActionHistory {
   comment      String?                     
   createdAt    DateTime    @default(now())
 
-  user         User?        @relation(fields: [userId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
