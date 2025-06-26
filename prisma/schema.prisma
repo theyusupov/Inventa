@@ -119,12 +119,14 @@ model Partner {
 
 
 model Category {
-  id           String @id @default(uuid())
-  name         String 
-  createdAt    DateTime? @default(now())
-  updatedAt    DateTime?
+  id              String @id @default(uuid())
+  name            String 
+  image           String
+  repaymentPeriod Int
+  createdAt       DateTime? @default(now())
+  updatedAt       DateTime?
 
-  products     Product[]
+  products        Product[]
 }
 
 
@@ -139,6 +141,7 @@ model Product {
   unit         Units
   isActive     Boolean
   description  String
+  image        String
   comment      String
   userId       String?
   categoryId   String
@@ -149,22 +152,8 @@ model Product {
   category     Category @relation(fields: [categoryId], references: [id])
 
   purchases                Purchase[]
-  productImages            ProductImage[]
   contracts                Contract[]
 }
-
-
-
-model  ProductImage {
-  id           String @id @default(uuid())
-  image        String
-  productId    String
-  createdAt    DateTime? @default(now())
-  updatedAt    DateTime?
-
-  product      Product @relation(fields: [productId], references: [id])
-}
-
 
 
 model Purchase {
@@ -174,7 +163,7 @@ model Purchase {
   comment    String
   userId     String?
   partnerId  String
-  productId  String @unique
+  productId  String 
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
@@ -188,8 +177,7 @@ model Purchase {
 model Contract {
   id                String @id @default(uuid()) 
   quantity          Int
-  sellPrice         Int?
-  buyPrice          Int?
+  sellPrice         Int
   repaymentPeriod   Int
   startTotal        Int?
   monthlyPayment    Int?
@@ -257,12 +245,12 @@ model Payment {
   paymentType       PaymentType
   type              Type
   partnerId         String
-  debtId            String
+  debtId            String?
   userId            String?
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
 
-  debt          Debt @relation(fields: [debtId], references: [id])
+  debt          Debt? @relation(fields: [debtId], references: [id])
   partner       Partner @relation(fields: [partnerId], references: [id])
   user          User? @relation(fields: [userId], references: [id])
 }

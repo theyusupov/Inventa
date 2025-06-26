@@ -17,13 +17,16 @@ export class PurchaseService {
     if (!partner) throw new BadRequestException('Partner not found');
 
     const finalBuyPrice = buyPrice ?? product.buyPrice;
-    const finalQuantity = quantity ?? product.quantity;
+    const finalQuantity = quantity ?? 0;
+    if(finalQuantity===0)throw new BadRequestException("Quantity can not be 0")
+   
+    await this.prisma.product.update({where:{id:product.id},data:{quantity:finalQuantity}})
 
     const purchase = await this.prisma.purchase.create({
       data: {
         ...dto,
         buyPrice: finalBuyPrice,
-        quantity: finalQuantity,
+        quantity:finalQuantity,
         userId,
       },
     });
@@ -34,6 +37,18 @@ export class PurchaseService {
       where: { id: partner.id },
       data: {
         balance: partner.balance + increaseAmount,
+      },
+    });
+
+    const productBuyPrice = product.quantity * product.buyPrice;
+    const purchaseBuyPrice = purchase.quantity * purchase.buyPrice;
+    const newBuyPrice  = (productBuyPrice + purchaseBuyPrice) / (product.quantity + purchase.quantity)
+
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: {
+        buyPrice: newBuyPrice,
+        quantity: product.quantity+finalQuantity
       },
     });
 

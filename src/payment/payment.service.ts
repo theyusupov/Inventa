@@ -8,58 +8,97 @@ import { Prisma } from 'generated/prisma';
 export class PaymentService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreatePaymentDto, userId: string) {
-    const { debtId, partnerId, type, amount, monthsPaid } = dto;
+//   async create(dto: CreatePaymentDto, userId: string) {
+//     const { debtId, partnerId, type, amount, monthsPaid } = dto;
 
-    const debt = await this.prisma.debt.findUnique({ where: { id: debtId } });
-    if (!debt) throw new BadRequestException('Debt not found');
+//     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
+//     if (!partner) throw new BadRequestException('Partner not found');
 
-    const contract = await this.prisma.contract.findUnique({ where: { id: debt.contractId } });
-    if (!contract || ['CANCELLED', 'COMPLETED'].includes(contract.status!)) {
-      throw new BadRequestException('This contract is invalid.');
-    }
+//     if (
+//       (type === 'OUT' && partner.role === 'CUSTOMER') ||
+//       (type === 'IN' && partner.role === 'SELLER') ||
+//       (type === 'OUT' && debtId && monthsPaid)
+//     ) {
+//       throw new BadRequestException('Payment type does not match with partner role');
+//     }
 
-    const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
-    if (!partner) throw new BadRequestException('Partner not found');
+//     let payment;
 
-    if ((type === 'OUT' && partner.role === 'CUSTOMER') || (type === 'IN' && partner.role === 'SELLER')) {
-      throw new BadRequestException('Payment type does not match partner role');
-    }
+//     if (debtId && monthsPaid) {
+//       const debt = await this.prisma.debt.findUnique({ where: { id: debtId } });
+//       if (!debt) throw new BadRequestException('Debt not found');
 
-    const payment = await this.prisma.payment.create({ data: { ...dto, userId } });
+//       const contract = await this.prisma.contract.findUnique({ where: { id: debt.contractId } });
+//       if (!contract || ['CANCELLED', 'COMPLETED'].includes(contract.status!)) {
+//         throw new BadRequestException('This contract is invalid.');
+//       }
 
-    await this.prisma.debt.update({
-      where: { id: debtId },
-      data: {
-        total: debt.total - amount,
-        remainingMonths: (debt.remainingMonths ?? 0) - (monthsPaid ?? 0),
-      },
-    });
+//       if ((amount / monthsPaid) !== contract.monthlyPayment) {
+//         throw new BadRequestException(
+//           `The amount you entered is not sufficient to cover ${monthsPaid} months' payment.`
+//         );
+//       }
 
-    const balanceChange = type === 'OUT' ? -amount : amount;
-    await this.prisma.partner.update({
-      where: { id: partnerId },
-      data: { balance: partner.balance + balanceChange },
-    });
+//       await this.prisma.debt.update({
+//         where: { id: debtId },
+//         data: {
+//           total: debt.total - amount,
+//           remainingMonths: (debt.remainingMonths ?? 0) - monthsPaid,
+//         },
+//       });
 
-    await this.prisma.actionHistory.create({
-      data: {
-        tableName: 'payment',
-        actionType: 'CREATE',
-        recordId: payment.id,
-        newValue: payment,
-        userId,
-        comment: 'Payment created and debt updated',
-      },
-    });
+//       const updatedDebt = await this.prisma.debt.findUnique({ where: { id: debtId } });
+//       if (updatedDebt && updatedDebt.remainingMonths === 0 && updatedDebt.total === 0) {
+//         await this.prisma.contract.update({
+//           where: { id: debt.contractId },
+//           data: { status: 'COMPLETED' },
+//         });
+//       }
+//     }
 
-    const updatedDebt = await this.prisma.debt.findUnique({ where: { id: debtId } });
-    if (updatedDebt && updatedDebt.remainingMonths === 0 && updatedDebt.total === 0) {
-      await this.prisma.contract.update({ where: { id: debt.contractId }, data: { status: 'COMPLETED' } });
-    }
+// payment = await this.prisma.payment.create({
+//   data: debtId
+//     ? {
+//         amount,
+//         comment: dto.comment,
+//         paymentType: dto.paymentType,
+//         type,
+//         partnerId,
+//         userId,
+//         debtId:debtId
+//       }
+//     : {
+//         amount,
+//         comment: dto.comment,
+//         paymentType: dto.paymentType,
+//         type,
+//         partnerId,
+//         userId,
+//       },
+//   });
 
-    return { message: 'Payment created successfully', payment };
-  }
+//     const balanceChange = type === 'OUT' ? -amount : amount;
+//     await this.prisma.partner.update({
+//       where: { id: partnerId },
+//       data: { balance: partner.balance + balanceChange },
+//     });
+
+//     await this.prisma.actionHistory.create({
+//       data: {
+//         tableName: 'payment',
+//         actionType: 'CREATE',
+//         recordId: payment.id,
+//         newValue: payment,
+//         userId,
+//         comment: 'Payment created and debt updated',
+//       },
+//     });
+
+//     return {
+//       message: 'Payment created successfully',
+//       payment,
+//     };
+//   }
 
   async findAll(params: {
     search?: string;

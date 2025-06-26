@@ -12,9 +12,6 @@ export class CreateProductDto {
   @IsInt()
   buyPrice: number;
 
-  @IsInt()
-  quantity: number;
-
   @IsEnum(Units)
   unit: Units;
 
@@ -23,6 +20,9 @@ export class CreateProductDto {
 
   @IsString()
   description: string;
+
+  @IsString()
+  image: string;
 
   @IsString()
   comment: string;

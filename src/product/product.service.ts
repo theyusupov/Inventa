@@ -18,6 +18,7 @@ export class ProductService {
     const product = await this.prisma.product.create({
       data: {
         ...createProductDto,
+        quantity:0,
         userId,
       },
     });
@@ -82,8 +83,7 @@ export class ProductService {
       where: { id },
       include: {
         category: true,
-        user: true,
-        productImages: true,
+        user: true
       },
     });
 

@@ -2,7 +2,7 @@ import { IsString, IsInt, IsOptional } from 'class-validator';
 
 export class CreatePurchaseDto {
   @IsInt()
-  quantity: number;
+  quantity?: number;
 
   @IsInt()
   buyPrice?: number;

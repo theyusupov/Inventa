@@ -36,12 +36,16 @@ export class CategoryController {
         summary: 'Electronics',
         value: {
           name: 'Electronics',
+          repaymentPeriod: 3,
+          image: '12333497328.png'
         },
       },
       example2: {
-        summary: 'Electronics',
+        summary: 'Clothes',
         value: {
-          name: 'Electronics',
+          name: 'Clothes',
+          repaymentPeriod: 2,
+          image: '12333497328.png'
         },
       },
     },
@@ -90,6 +94,8 @@ export class CategoryController {
         summary: 'Change name',
         value: {
           name: 'Electronics',
+          repaymentPeriod: 3,
+          image: '12333497328.png'
         },
       },
     },

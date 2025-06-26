@@ -18,17 +18,20 @@ export class ContractService {
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
     if (!product) throw new BadRequestException('Product not found');
 
+    const category = await this.prisma.category.findUnique({ where: { id: product.categoryId } });
+    if (!category) throw new BadRequestException('Category not found');
+
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
     if (!product.isActive) throw new BadRequestException("This product isn't active at the moment");
     if (product.quantity < quantity) throw new BadRequestException('Product quantity is not enough');
 
-    const isSeller = partner.role === 'SELLER';
-    const price = isSeller ? product.buyPrice : dtoSellPrice ?? product.sellPrice;
-    const usedQuantity = isSeller ? product.quantity : quantity;
+  
+    const price = dtoSellPrice ?? product.sellPrice;
+    const usedQuantity =  quantity;
     const total = price * usedQuantity;
-    const monthlyPayment = total / repaymentPeriod;
+    const monthlyPayment = total / (repaymentPeriod ?? category.repaymentPeriod);
 
     const contract = await this.prisma.contract.create({
       data: {
@@ -38,14 +41,11 @@ export class ContractService {
         status: 'ONGOING',
         startTotal: total,
         monthlyPayment,
-        ...(isSeller ? { buyPrice: price } : { sellPrice: price }),
+        sellPrice: price,
+        repaymentPeriod: repaymentPeriod ?? category.repaymentPeriod
       },
     });
 
-    const purchase = await this.prisma.purchase.findFirst({ where: { productId } });
-    if (!purchase) throw new BadRequestException('Purchase not found');
-
-    if (!isSeller) {
       const newQuantity = product.quantity - quantity;
 
       await this.prisma.product.update({
@@ -56,21 +56,16 @@ export class ContractService {
         },
       });
 
-      await this.prisma.purchase.update({
-        where: { id: purchase.id },
-        data: { quantity: newQuantity },
-      });
-
       await this.prisma.partner.update({
         where: { id: partnerId },
         data: { balance: partner.balance - total },
       });
-    }
+    
 
     const debt = await this.prisma.debt.create({
       data: {
         total,
-        remainingMonths: repaymentPeriod,
+        remainingMonths: (repaymentPeriod ?? category.repaymentPeriod),
         contractId: contract.id,
       },
     });
@@ -180,7 +175,7 @@ export class ContractService {
     const price = isSeller ? product.buyPrice : dtoSellPrice ?? product.sellPrice;
     const usedQuantity = isSeller ? product.quantity : quantity;
     const total = price * usedQuantity;
-    const monthlyPayment = total / repaymentPeriod;
+    const monthlyPayment = total / (repaymentPeriod??NaN);
 
     const updated = await this.prisma.contract.update({
       where: { id },

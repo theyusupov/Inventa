@@ -4,4 +4,12 @@ export class CreateCategoryDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  repaymentPeriod: number;
+
+  @IsString()
+  @IsNotEmpty()
+  image: string;
 }

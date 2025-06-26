@@ -37,25 +37,7 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('/upload-image')
-  @ApiOperation({ summary: 'Upload user image' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        image: {
-          type: 'string',
-          format: 'binary'
-        }
-      }
-    }
-  })
-  @UseInterceptors(FileInterceptor('image', { storage: multerUploadUserImage }))
-  uploadImage(@UploadedFile() image: Express.Multer.File) {
-    if (!image) return 'Not image uploaded';
-    return { image: image.filename };
-  }
+
 
   @Patch('/update-image/:id')
   @ApiOperation({ summary: 'Update user image by ID' })

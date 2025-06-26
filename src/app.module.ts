@@ -6,7 +6,6 @@ import { UserModule } from './user/user.module';
 import { PartnerModule } from './partner/partner.module';
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
-import { ProductImageModule } from './product-image/product-image.module';
 import { PurchaseModule } from './purchase/purchase.module';
 import { ContractModule } from './contract/contract.module';
 import { DebtModule } from './debt/debt.module';
@@ -15,9 +14,10 @@ import { ProductReturnModule } from './product-return/product-return.module';
 import { PaymentModule } from './payment/payment.module';
 import { SalaryModule } from './salary/salary.module';
 import { ActionHistoryModule } from './action-history/action-history.module';
+import { ImageModule } from './image/image.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, ProductImageModule, PurchaseModule, ContractModule, DebtModule, ReasonModule, ProductReturnModule, PaymentModule, SalaryModule, ActionHistoryModule],
+  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, PurchaseModule, ContractModule, DebtModule, ReasonModule, ProductReturnModule, PaymentModule, SalaryModule, ActionHistoryModule, ImageModule],
   controllers: [AppController],
   providers: [AppService],
 })
