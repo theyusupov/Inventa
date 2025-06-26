@@ -32,31 +32,31 @@ import {
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF, UserRole.OWNER])
-  // @Post()
-  // @ApiOperation({ summary: 'Create a new payment' })
-  // @ApiBody({
-  //   type: CreatePaymentDto,
-  //   examples: {
-  //     example1: {
-  //       summary: 'Payment example',
-  //       value: {
-  //         amount: 5000,
-  //         comment: "First month payment",
-  //         paymentType: "CASH",  
-  //         type: "IN",       
-  //         partnerId: "partner-uuid-example",
-  //         monthsPaid: 1,
-  //         debtId: "debt-uuid-example"
-  //       }
-  //     }
-  //   }
-  // })
-  // create(@Body() dto: CreatePaymentDto, @Request() req) {
-  //   const userId = req.user.id;
-  //   return this.paymentService.create(dto, userId);
-  // }
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.STAFF, UserRole.OWNER])
+  @Post()
+  @ApiOperation({ summary: 'Create a new payment' })
+  @ApiBody({
+    type: CreatePaymentDto,
+    examples: {
+      example1: {
+        summary: 'Payment example',
+        value: {
+          amount: 5000,
+          comment: "First month payment",
+          paymentType: "CASH",  
+          type: "IN",       
+          partnerId: "partner-uuid-example",
+          monthsPaid: 1,
+          debtId: "debt-uuid-example"
+        }
+      }
+    }
+  })
+  create(@Body() dto: CreatePaymentDto, @Request() req) {
+    const userId = req.user.id;
+    return this.paymentService.create(dto, userId);
+  }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
@@ -93,30 +93,30 @@ export class PaymentController {
     return this.paymentService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.STAFF, UserRole.OWNER])
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update payment by ID' })
-  @ApiParam({ name: 'id', description: 'Payment ID' })
-  @ApiBody({
-    type: UpdatePaymentDto,
-    examples: {
-      example1: {
-        summary: 'Update payment data',
-        value: {
-          amount: 120000,
-          comment: "Updated comment",
-          paymentType: "CARD",
-          type: "IN",
-          monthsPaid: 2
-        }
-      }
-    }
-  })
-  update(@Param('id') id: string, @Body() dto: UpdatePaymentDto, @Request() req) {
-    const userId = req.user.id;
-    return this.paymentService.update(id, dto, userId);
-  }
+  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  // @Roles([UserRole.STAFF, UserRole.OWNER])
+  // @Patch(':id')
+  // @ApiOperation({ summary: 'Update payment by ID' })
+  // @ApiParam({ name: 'id', description: 'Payment ID' })
+  // @ApiBody({
+  //   type: UpdatePaymentDto,
+  //   examples: {
+  //     example1: {
+  //       summary: 'Update payment data',
+  //       value: {
+  //         amount: 120000,
+  //         comment: "Updated comment",
+  //         paymentType: "CARD",
+  //         type: "IN",
+  //         monthsPaid: 2
+  //       }
+  //     }
+  //   }
+  // })
+  // update(@Param('id') id: string, @Body() dto: UpdatePaymentDto, @Request() req) {
+  //   const userId = req.user.id;
+  //   return this.paymentService.update(id, dto, userId);
+  // }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])

@@ -74,7 +74,8 @@ export class UserService {
     const isValid = await bcrypt.compare(dto.password, user.password);
     if (!isValid) throw new BadRequestException('Incorrect password');
 
-    const token = this.jwtService.sign({ id: user.id, role: user.role });
+    const access_token = this.jwtService.sign({ id: user.id, role: user.role });
+    const refresh_token = this.jwtService.sign({ id: user.id, role: user.role });
 
     await this.prisma.actionHistory.create({
       data: {
@@ -86,7 +87,7 @@ export class UserService {
       },
     });
 
-    return { token };
+    return { access_token, refresh_token };
   }
 
   async findAll(params: {

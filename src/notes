@@ -7,10 +7,7 @@ purchase qilingan quantitysi productga qo'shiladi. ✅
 purchase qilinganda agar bu product bo'lsa productni quantitysini buyPrice ga ko'paytirib. ✅
 purchaseni quantitysini buyPrice ga ko'paytirib ikkala yig'indini birbiriga qo'shib. ✅
 ikkala quantityni yig'indisiga bo'lish.✅
-contract tuzilganda productning soniga tekshiriladi 0 teng bo'lsa yaratilmaydi.
-product-return qilinganda status cancelled va debt o'chib ketadi va balance to'g'rilanadi.
-product-return false bo'lsa productga qo'shilmaydi, true bo'lsa productga qo'shiladi.
-
-
-7:29 default category_time, kiritsa u kiritgan time.
+contract tuzilganda productning soniga tekshiriladi 0 teng bo'lsa yaratilmaydi. ✅
+product-return qilinganda status cancelled va debt o'chib ketadi va balance to'g'rilanadi ✅
+product-return false bo'lsa productga qo'shilmaydi, true bo'lsa productga qo'shiladi. ✅
 

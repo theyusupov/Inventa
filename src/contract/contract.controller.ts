@@ -24,7 +24,7 @@ export class ContractController {
       example1: {
         summary: 'Basic Contract Creation',
         value: {
-          quantity: 5,
+          quantity: 4,
           sellPrice:1000,
           repaymentPeriod: 6,
           productId: 'product-uuid',

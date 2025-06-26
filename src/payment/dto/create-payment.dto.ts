@@ -1,4 +1,4 @@
-import { IsInt, IsString, IsEnum } from 'class-validator';
+import { IsInt, IsString, IsEnum, IsOptional } from 'class-validator';
 import { PaymentType, Type } from 'generated/prisma';
 
 export class CreatePaymentDto {
@@ -17,9 +17,11 @@ export class CreatePaymentDto {
   @IsString()
   partnerId: string;
 
+  @IsOptional()
   @IsInt()
-  monthsPaid: number
+  monthsPaid?: number
 
+  @IsOptional()
   @IsString()
-  debtId: string;
+  debtId?: string;
 }
