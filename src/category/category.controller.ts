@@ -86,28 +86,40 @@ export class CategoryController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('image')) 
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update category by ID' })
-  @ApiConsumes('multipart/form-data')
   @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string' },
-        repaymentPeriod: { type: 'number' },
-        image: {
-          type: 'string',
-          format: 'binary',
-  }, },},})
+    type: CreateCategoryDto,
+    description: 'Update a category',
+    examples: {
+      example1: {
+        summary: 'Electronics',
+        value: {
+          name: 'Electronics',
+          repaymentPeriod: 3,
+          image: '12333497328.png'
+        },
+      },
+      example2: {
+        summary: 'Clothes',
+        value: {
+          name: 'Clothes',
+          repaymentPeriod: 2,
+          image: '12333497328.png'
+        },
+      },
+    },
+  })
   update(
     @Param('id') id: string,
     @Body() dto: Partial<CreateCategoryDto>,
     @Request() req,
-    @UploadedFile() image?: Express.Multer.File,
   ) {
-    let userId = req.user.id;
-    return this.categoryService.update(id, dto, userId, image);
+    const userId = req.user.id;
+    return this.categoryService.update(id, dto, userId);
   }
+
+
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])

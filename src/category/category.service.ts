@@ -92,35 +92,36 @@ export class CategoryService {
     };
   }
 
+
   async update(
     id: string,
-    data: Partial<CreateCategoryDto>,
+    dto: Partial<CreateCategoryDto>,
     userId: string,
-    image?: Express.Multer.File,
   ) {
     const oldCategory = await this.prisma.category.findUnique({ where: { id } });
     if (!oldCategory) {
       throw new NotFoundException('Category not found');
     }
 
-    let imageFileName = oldCategory.image;
+    let updatedImage = oldCategory.image;
 
-    if (image) {
-      if (oldCategory.image) {
-        const filePath = path.join(__dirname, '../../images', oldCategory.image);
-        try {
-          await fs.unlink(filePath);
-        } catch (error) {
-        }
+    // Agar dto.image berilgan bo‘lsa va eski rasmga teng bo‘lmasa
+    if (dto.image && dto.image !== oldCategory.image) {
+      // Eski rasm faylini o‘chirish
+      const filePath = path.join(__dirname, '../../images', oldCategory.image);
+      try {
+        await fs.unlink(filePath);
+      } catch (err) {
+        console.warn('Eski rasmni o‘chirishda xatolik:', err.message);
       }
-      imageFileName = image.filename;
+      updatedImage = dto.image;
     }
 
-    const category = await this.prisma.category.update({
+    const updatedCategory = await this.prisma.category.update({
       where: { id },
       data: {
-        ...data,
-        image: imageFileName,
+        ...dto,
+        image: updatedImage,
         updatedAt: new Date(),
       },
     });
@@ -131,7 +132,7 @@ export class CategoryService {
         actionType: 'UPDATE',
         recordId: id,
         oldValue: oldCategory,
-        newValue: category,
+        newValue: updatedCategory,
         comment: 'Category updated',
         userId,
       },
@@ -139,9 +140,10 @@ export class CategoryService {
 
     return {
       message: 'Category updated successfully',
-      category,
+      category: updatedCategory,
     };
   }
+
 
   async remove(id: string, userId: string) {
     const oldCategory = await this.prisma.category.findUnique({ where: { id } });

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
 import { ImageService } from './image.service';
 import { CreateImageDto } from './dto/create-image.dto';
 import { UpdateImageDto } from './dto/update-image.dto';
@@ -7,6 +7,10 @@ import { multerUploadUserImage } from 'src/shared/multer';
 import { ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import * as path from 'path';
 import * as fs from 'fs';
+import { JwtAuthGuard } from 'src/shared/guards/token.guard';
+import { JwtRoleGuard } from 'src/shared/guards/role.guard';
+import { Roles } from 'src/shared/guards/role.decorator';
+import { UserRole } from 'generated/prisma';
 
 @Controller('image')
 export class ImageController {
@@ -32,6 +36,8 @@ export class ImageController {
       return { image: image.filename };
     }
 
+    @UseGuards(JwtAuthGuard, JwtRoleGuard)
+    @Roles([UserRole.STAFF, UserRole.OWNER])
     @Get('get-images')
     @ApiOperation({ summary: 'Get images' })
     getImage() {

@@ -109,6 +109,16 @@ export class UserController {
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update user by ID' })
+  @ApiBody({
+    schema: {
+      example: {
+        fullName: 'Nurullo Yusupov',
+        phoneNumber: '+998-90-321-45-67',
+        balance: 0,
+        role: 'STAFF'
+      }
+    }
+  })
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(id, updateUserDto);

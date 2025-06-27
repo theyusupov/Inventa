@@ -35,6 +35,7 @@ export class ContractService {
     const total = price * usedQuantity;
     const monthlyPayment = total / (repaymentPeriod ?? category.repaymentPeriod);
 
+    
     const contract = await this.prisma.contract.create({
       data: {
         ...dto,

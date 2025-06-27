@@ -1,11 +1,11 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsInt } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @IsString()
+  @IsInt()
   @IsNotEmpty()
   repaymentPeriod: number;
 

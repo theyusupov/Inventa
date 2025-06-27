@@ -131,7 +131,6 @@ export class UserService {
     };
   }
 
-
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -150,11 +149,10 @@ export class UserService {
     return user;
   }
 
-  async update(id: string, dto: UpdateUserDto, file?: Express.Multer.File) {
+  async update(id: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
-    // Telefon raqami tekshiruvi
     if (dto.phoneNumber && dto.phoneNumber !== user.phoneNumber) {
       const existingPhone = await this.prisma.user.findUnique({
         where: { phoneNumber: dto.phoneNumber },
@@ -162,16 +160,14 @@ export class UserService {
       if (existingPhone) throw new ConflictException('Phone number already in use');
     }
 
-    // Agar yangi rasm bo‘lsa eski faylni o‘chir
-    let imageName = user.image;
-    if (file) {
-      if (user.image) {
-        const oldPath = path.join(__dirname, '../../images', user.image);
-        try {
-          await fs.unlink(oldPath);
-        } catch {}
+    // Agar yangi rasm berilgan bo‘lsa, eski rasmni o‘chirish
+    if (dto.image && user.image && dto.image !== user.image) {
+      const filePath = path.join(__dirname, '../../images', user.image);
+      try {
+        await fs.unlink(filePath);
+      } catch (err) {
+        console.warn('Old image could not be deleted:', err.message);
       }
-      imageName = file.filename;
     }
 
     // Parolni xeshlash
@@ -183,7 +179,6 @@ export class UserService {
       where: { id },
       data: {
         ...dto,
-        image: imageName,
         password: hashedPassword,
       },
     });

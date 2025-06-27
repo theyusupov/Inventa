@@ -94,13 +94,29 @@ export class ProductService {
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto, userId: string) {
+  async update(id: string, dto: UpdateProductDto, userId: string) {
     const oldProduct = await this.prisma.product.findUnique({ where: { id } });
     if (!oldProduct) throw new NotFoundException('Product not found');
 
-    const product = await this.prisma.product.update({
+    let imageFileName = oldProduct.image;
+
+    if (dto.image && dto.image !== oldProduct.image) {
+      const filePath = path.join(__dirname, '../../images', oldProduct.image);
+      try {
+        await fs.unlink(filePath);
+      } catch (err) {
+        console.warn('Eski product rasmi o‘chmadi:', err.message);
+      }
+
+      imageFileName = dto.image;
+    }
+
+    const updatedProduct = await this.prisma.product.update({
       where: { id },
-      data: updateProductDto,
+      data: {
+        ...dto,
+        image: imageFileName,
+      },
     });
 
     await this.prisma.actionHistory.create({
@@ -109,13 +125,16 @@ export class ProductService {
         recordId: id,
         actionType: 'UPDATE',
         oldValue: oldProduct,
-        newValue: product,
-        userId,
+        newValue: updatedProduct,
         comment: 'Product updated',
+        userId,
       },
     });
 
-    return { message: 'Product updated successfully', product };
+    return {
+      message: 'Product updated successfully',
+      product: updatedProduct,
+    };
   }
 
   async remove(id: string, userId: string) {
