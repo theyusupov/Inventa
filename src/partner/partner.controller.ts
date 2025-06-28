@@ -40,7 +40,7 @@ export class PartnerController {
         value: {
           fullName: 'Ali Karimov',
           phoneNumber: '+998-90-123-45-67',
-          address: 'Toshkent, Chilonzor',
+          address: 'Andijon',
           isActive: true,
           balance: 0,
           role: 'SELLER',
@@ -117,7 +117,7 @@ export class PartnerController {
         value: {
           fullName: 'Ali Karimov',
           phoneNumber: '+998-90-123-45-67',
-          address: 'Toshkent, Chilonzor',
+          address: 'Toshkent',
           isActive: true,
           balance: 5000,
           role: 'SELLER',

@@ -42,6 +42,22 @@ enum PaymentType {
   CARD
 }
 
+enum Region {
+  Andijon 
+  Buxoro 
+  Fargona
+  Jizzax
+  Xorazm
+  Namangan
+  Navoiy
+  Qashqadaryo
+  Samarqand
+  Sirdaryo
+  Surxondaryo
+  Toshkent
+}
+
+
 enum Type {
   IN
   OUT
@@ -96,7 +112,7 @@ model Partner {
   id           String @id @default(uuid())
   fullName     String
   phoneNumber  String @unique
-  address      String
+  address      Region?
   isActive     Boolean
   balance      Int
   role         PartnerRole

@@ -100,10 +100,11 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get user by ID' })
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
+  @ApiOperation({ summary: 'Your profile' })
+  @Get('my-profile')
+  me( @Request() req) {
+    let userId = req.user.id
+    return this.userService.me(userId);
   }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
@@ -131,16 +132,6 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
-
-  @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  @Roles([UserRole.OWNER, UserRole.STAFF])
-  @Get('/my-profile')
-  @ApiOperation({ summary: 'Your profile' })
-  me(@Request() req) {
-    const userId = req.user.id
-    return this.userService.me(userId);
-  }
-
 
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)

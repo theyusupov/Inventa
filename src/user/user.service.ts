@@ -133,9 +133,9 @@ export class UserService {
     };
   }
 
-  async findOne(id: string) {
+  async me(userId: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id },
+      where: { id:userId },
       include: {
         partners:true,
         products:true,
@@ -234,13 +234,6 @@ export class UserService {
     });
 
     return { message: 'User deleted successfully' };
-  }
-
-  async me(userId:string) {
-    const profile = await this.prisma.user.findUnique({ where: {id:userId } });
-    if (!profile) throw new NotFoundException('User not found');
-    
-    return {profile};
   }
 
  async exportToExcel(res: Response) {
