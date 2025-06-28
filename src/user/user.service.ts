@@ -14,6 +14,8 @@ import * as fs from 'fs/promises';
 import { Prisma } from 'generated/prisma';
 import { Response } from 'express';
 import * as ExcelJS from 'exceljs';
+import { formatPhoneNumber } from 'src/shared/formatPhone';
+
 
 @Injectable()
 export class UserService {
@@ -32,11 +34,12 @@ export class UserService {
     if (phoneExists) throw new ConflictException('Phone number already in use');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const formattedPhone = formatPhoneNumber(dto.phoneNumber);
 
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName,
-        phoneNumber: dto.phoneNumber,
+        phoneNumber: formattedPhone,
         image: dto.image,
         password: hashedPassword,
         email: dto.email,
@@ -162,7 +165,6 @@ export class UserService {
       if (existingPhone) throw new ConflictException('Phone number already in use');
     }
 
-    // Agar yangi rasm berilgan bo‘lsa, eski rasmni o‘chirish
     if (dto.image && user.image && dto.image !== user.image) {
       const filePath = path.join(__dirname, '../../images', user.image);
       try {
@@ -172,16 +174,20 @@ export class UserService {
       }
     }
 
-    // Parolni xeshlash
     const hashedPassword = dto.password
       ? await bcrypt.hash(dto.password, 10)
       : user.password;
+
+    const newPhoneNumber = dto.phoneNumber
+      ? formatPhoneNumber(dto.phoneNumber)
+      : user.phoneNumber;
 
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
         ...dto,
         password: hashedPassword,
+        phoneNumber: newPhoneNumber
       },
     });
 

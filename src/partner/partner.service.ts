@@ -9,7 +9,8 @@ import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
 import { Prisma } from 'generated/prisma';
 import * as ExcelJS from 'exceljs';
-import { Response } from 'express';
+import e, { Response } from 'express';
+import { formatPhoneNumber } from 'src/shared/formatPhone';
 
 @Injectable()
 export class PartnerService {
@@ -21,8 +22,10 @@ export class PartnerService {
     });
     if (exists) throw new ConflictException('Phone number already in use');
 
+    const newPhoneNumber = formatPhoneNumber(dto.phoneNumber)
+
     const partner = await this.prisma.partner.create({
-      data: { ...dto, userId },
+      data: { ...dto, userId, phoneNumber:newPhoneNumber },
     });
 
     await this.prisma.actionHistory.create({
@@ -106,9 +109,11 @@ export class PartnerService {
       if (phoneUsed) throw new ConflictException('Phone number already in use');
     }
 
+    const newPhoneNumber = dto.phoneNumber ? formatPhoneNumber(dto.phoneNumber) : existing.phoneNumber
+
     const updated = await this.prisma.partner.update({
       where: { id },
-      data: { ...dto, updatedAt: new Date() },
+      data: { ...dto, updatedAt: new Date(), phoneNumber:newPhoneNumber },
     });
 
     await this.prisma.actionHistory.create({
