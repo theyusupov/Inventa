@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   Query,
+  Res,
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -24,6 +25,8 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import { Response } from 'express';
+
 
 
 
@@ -47,7 +50,6 @@ export class PaymentController {
           paymentType: "CASH",  
           type: "IN",       
           partnerId: "partner-uuid-example",
-          monthsPaid: 1,
           debtId: "debt-uuid-example"
         }
       }
@@ -93,30 +95,6 @@ export class PaymentController {
     return this.paymentService.findOne(id);
   }
 
-  // @UseGuards(JwtAuthGuard, JwtRoleGuard)
-  // @Roles([UserRole.STAFF, UserRole.OWNER])
-  // @Patch(':id')
-  // @ApiOperation({ summary: 'Update payment by ID' })
-  // @ApiParam({ name: 'id', description: 'Payment ID' })
-  // @ApiBody({
-  //   type: UpdatePaymentDto,
-  //   examples: {
-  //     example1: {
-  //       summary: 'Update payment data',
-  //       value: {
-  //         amount: 120000,
-  //         comment: "Updated comment",
-  //         paymentType: "CARD",
-  //         type: "IN",
-  //         monthsPaid: 2
-  //       }
-  //     }
-  //   }
-  // })
-  // update(@Param('id') id: string, @Body() dto: UpdatePaymentDto, @Request() req) {
-  //   const userId = req.user.id;
-  //   return this.paymentService.update(id, dto, userId);
-  // }
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
@@ -126,5 +104,13 @@ export class PaymentController {
   remove(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
     return this.paymentService.remove(id, userId);
+  }
+
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.STAFF, UserRole.OWNER])
+  @Get('/export/excel')
+  @ApiOperation({ summary: 'Export all payments to Excel' })
+  exportToExcel(@Res() res: Response) {
+    return this.paymentService.exportToExcel(res);
   }
 }

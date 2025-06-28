@@ -92,9 +92,6 @@ model User {
 
 
 
-
-
-
 model Partner {
   id           String @id @default(uuid())
   fullName     String

@@ -2,6 +2,8 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductReturnDto } from './dto/create-product-return.dto';
 import { Prisma } from 'generated/prisma';
+import { Response } from 'express';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class ProductReturnService {
@@ -170,4 +172,56 @@ export class ProductReturnService {
 
     return { message: 'Product return deleted successfully' };
   }
+
+  async exportToExcel(res: Response) {
+      const returns = await this.prisma.productReturn.findMany({
+        include: {
+          reason: true,
+          contract: {
+            include: {
+              partner: true,
+              product: true,
+            },
+          },
+        },
+      });
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Product Returns');
+
+      worksheet.addRow([
+        '№',
+        'Return ID',
+        'Is New',
+        'Restore Amount',
+        'Reason',
+        'Partner',
+        'Product',
+        'Created At',
+        'Updated At',
+      ]);
+
+      returns.forEach((ret, index) => {
+        worksheet.addRow([
+          index + 1,
+          ret.id,
+          ret.isNew ? 'Yes' : 'No',
+          ret.restoreAmount ?? '—',
+          ret.reason?.reasonText || '—',
+          ret.contract?.partner?.fullName || '—',
+          ret.contract?.product?.name || '—',
+          ret.createdAt?.toISOString().split('T')[0] || '',
+          ret.updatedAt?.toISOString().split('T')[0] || '',
+        ]);
+      });
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      res.setHeader('Content-Disposition', 'attachment; filename=product_returns.xlsx');
+
+      await workbook.xlsx.write(res);
+      res.end();
+    }
 }

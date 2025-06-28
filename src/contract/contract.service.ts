@@ -7,6 +7,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { Prisma } from 'generated/prisma';
+import * as ExcelJS from 'exceljs';
+import { Response } from 'express';
 
 @Injectable()
 export class ContractService {
@@ -176,5 +178,69 @@ export class ContractService {
     });
 
     return { message: 'Contract deleted successfully' };
+  }
+
+  async exportToExcel(res: Response) {
+    const contracts = await this.prisma.contract.findMany({
+      include: {
+        partner: true,
+        product: true,
+        user: true,
+        debts: true,
+        returns: true,
+      },
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Contracts');
+
+    worksheet.addRow([
+      '№',
+      'Contract ID',
+      'Partner Name',
+      'Partner Phone',
+      'Product Name',
+      'Quantity',
+      'Price',
+      'Start Total',
+      'Monthly Payment',
+      'Repayment Period',
+      'Contract Status',
+      'User',
+      'Created At',
+      'Updated At',
+      'Debt Count',
+      'Return Count',
+    ]);
+
+    contracts.forEach((contract, index) => {
+      worksheet.addRow([
+        index + 1,
+        contract.id,
+        contract.partner?.fullName || '—',
+        contract.partner?.phoneNumber || '—',
+        contract.product?.name || '—',
+        contract.quantity,
+        contract.sellPrice,
+        contract.startTotal,
+        contract.monthlyPayment,
+        contract.repaymentPeriod,
+        contract.status || '—',
+        contract.user?.fullName || '—',
+        contract.createdAt?.toISOString().split('T')[0] || '',
+        contract.updatedAt?.toISOString().split('T')[0] || '',
+        contract.debts?.length || 0,
+        contract.returns?.length || 0,
+      ]);
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=contracts.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
   }
 }

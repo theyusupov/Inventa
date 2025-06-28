@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Res } from '@nestjs/common';
 import { ActionHistoryService } from './action-history.service';
 import { CreateActionHistoryDto } from './dto/create-action-history.dto';
 import { UpdateActionHistoryDto } from './dto/update-action-history.dto';
@@ -7,6 +7,7 @@ import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 import { JwtRoleGuard } from 'src/shared/guards/role.guard';
 import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
+import { Response } from 'express';
 
 @ApiTags('Action History')
 @Controller('action-history')
@@ -44,5 +45,13 @@ export class ActionHistoryController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.actionHistoryService.remove(id);
+  }
+
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER,UserRole.STAFF])
+  @Get('export/excel')
+  @ApiOperation({ summary: 'Export action history to Excel' })
+  async exportToExcel(@Res() res: Response) {
+    return this.actionHistoryService.exportToExcel(res);
   }
 }

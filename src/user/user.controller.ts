@@ -10,13 +10,14 @@ import {
   UploadedFile,
   UseGuards,
   Request,
-  Query
+  Query,
+  Res
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto, loginDto, RegisterDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
+import { Express, Response } from 'express';
 import { multerUploadUserImage } from 'src/shared/multer';
 import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
@@ -97,7 +98,6 @@ export class UserController {
     });
   }
 
-
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by ID' })
@@ -132,7 +132,24 @@ export class UserController {
     return this.userService.remove(id);
   }
 
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER, UserRole.STAFF])
+  @Get('/my-profile')
+  @ApiOperation({ summary: 'Your profile' })
+  me(@Request() req) {
+    const userId = req.user.id
+    return this.userService.me(userId);
+  }
 
+
+
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER, UserRole.STAFF])
+  @Get('export/excel')
+  @ApiOperation({ summary: 'Export all users to Excel' })
+  async exportUsersToExcel(@Res() res: Response) {
+    return this.userService.exportToExcel(res);
+  }
 
 
 

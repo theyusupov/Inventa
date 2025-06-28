@@ -3,6 +3,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { Prisma } from 'generated/prisma';
+import { Response } from 'express';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class SalaryService {
@@ -158,5 +160,45 @@ export class SalaryService {
     });
 
     return { message: 'Salary deleted successfully' };
+  }
+
+ async exportToExcel(res: Response) {
+    const salaries = await this.prisma.salary.findMany({
+      include: {
+        user: true,
+      },
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Salaries');
+
+    worksheet.addRow([
+      '№',
+      'Full Name',
+      'Amount',
+      'Comment',
+      'Created At',
+      'Updated At',
+    ]);
+
+    salaries.forEach((salary, index) => {
+      worksheet.addRow([
+        index + 1,
+        salary.user?.fullName || '—',
+        salary.amount,
+        salary.comment,
+        salary.createdAt?.toISOString().split('T')[0],
+        salary.updatedAt?.toISOString().split('T')[0],
+      ]);
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=salaries.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
   }
 }

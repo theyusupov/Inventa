@@ -5,6 +5,8 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { Prisma } from 'generated/prisma';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { Response } from 'express';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class ProductService {
@@ -166,5 +168,61 @@ export class ProductService {
     });
 
     return { message: 'Product deleted successfully' };
+  }
+
+  async exportToExcel(res: Response) {
+    const products = await this.prisma.product.findMany({
+      include: {
+        user: true,
+        category: true,
+      },
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Products');
+
+    worksheet.addRow([
+      '№',
+      'Product ID',
+      'Name',
+      'Sell Price',
+      'Buy Price',
+      'Quantity',
+      'Unit',
+      'Is Active',
+      'Description',
+      'Comment',
+      'Image',
+      'Category',
+      'Created By (User)',
+      'Created At',
+      'Updated At',
+    ]);
+
+    products.forEach((product, index) => {
+      worksheet.addRow([
+        index + 1,
+        product.id,
+        product.name,
+        product.sellPrice,
+        product.buyPrice,
+        product.quantity,
+        product.unit,
+        product.isActive ? 'Yes' : 'No',
+        product.description,
+        product.comment,
+        product.image,
+        product.category?.name || '—',
+        product.user?.fullName || '—',
+        product.createdAt?.toISOString().split('T')[0] || '',
+        product.updatedAt?.toISOString().split('T')[0] || '',
+      ]);
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=products.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
   }
 }

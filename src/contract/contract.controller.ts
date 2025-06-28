@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Delete, Body, UseGuards, Request, Patch, Query } from '@nestjs/common';
+import { Controller, Post, Get, Param, Delete, Body, UseGuards, Request, Patch, Query, Res } from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
@@ -6,7 +6,8 @@ import { JwtAuthGuard } from 'src/shared/guards/token.guard';
 import { JwtRoleGuard } from 'src/shared/guards/role.guard';
 import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 
 
 @ApiTags('Contract')
@@ -76,5 +77,14 @@ export class ContractController {
     const userId = req.user.id;
     return this.contractService.remove(id, userId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('export/excel')
+  @ApiOperation({ summary: 'Export contracts to Excel' })
+  @ApiResponse({ status: 200, description: 'Excel fayl yuklab olinadi' })
+  exportExcel(@Res() res: Response) {
+    return this.contractService.exportToExcel(res);
+  }
+
 }
  

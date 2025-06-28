@@ -9,6 +9,7 @@ import {
   Request,
   UseGuards,
   Query,
+  Res,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -24,6 +25,7 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 
 @ApiTags('Product')
 @Controller('product')
@@ -136,5 +138,13 @@ export class ProductController {
   remove(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
     return this.productService.remove(id, userId);
+  }
+
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.STAFF, UserRole.OWNER])
+  @Get('export/excel')
+  @ApiOperation({ summary: 'Export products to Excel' })
+  async exportToExcel(@Res() res: Response) {
+    return this.productService.exportToExcel(res);
   }
 }

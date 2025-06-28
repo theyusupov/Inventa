@@ -8,6 +8,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
 import { Prisma } from 'generated/prisma';
+import * as ExcelJS from 'exceljs';
+import { Response } from 'express';
 
 @Injectable()
 export class PartnerService {
@@ -143,4 +145,57 @@ export class PartnerService {
 
     return { message: 'Partner deleted successfully' };
   }
+
+  async exportToExcel(res: Response) {
+      const partners = await this.prisma.partner.findMany({
+        include: {
+          user: true,
+        },
+      });
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Partners');
+
+      worksheet.addRow([
+        '№',
+        'ID',
+        'Full Name',
+        'Phone Number',
+        'Address',
+        'Is Active',
+        'Balance',
+        'Role',
+        'Created At',
+        'Updated At',
+        'User Full Name',
+      ]);
+
+      partners.forEach((partner, index) => {
+        worksheet.addRow([
+          index + 1,
+          partner.id,
+          partner.fullName,
+          partner.phoneNumber,
+          partner.address,
+          partner.isActive ? 'Yes' : 'No',
+          partner.balance,
+          partner.role,
+          partner.createdAt?.toISOString().split('T')[0],
+          partner.updatedAt?.toISOString().split('T')[0],
+          partner.user?.fullName || '—',
+        ]);
+      });
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=partners.xlsx'
+      );
+
+      await workbook.xlsx.write(res);
+      res.end();
+    }
 }

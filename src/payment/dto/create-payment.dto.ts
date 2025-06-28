@@ -18,10 +18,6 @@ export class CreatePaymentDto {
   partnerId: string;
 
   @IsOptional()
-  @IsInt()
-  monthsPaid?: number
-
-  @IsOptional()
   @IsString()
   debtId?: string;
 }

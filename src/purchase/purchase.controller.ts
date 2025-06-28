@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Query,
+  Res,
 } from '@nestjs/common';
 import { PurchaseService } from './purchase.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
@@ -22,6 +23,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 
 @ApiTags('Purchase')
 @Controller('purchase')
@@ -95,5 +97,14 @@ export class PurchaseController {
   remove(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
     return this.purchaseService.remove(id, userId);
+  }
+
+
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.STAFF, UserRole.OWNER])
+  @Get('export/excel')
+  @ApiOperation({ summary: 'Export purchases to Excel file' })
+  exportToExcel(@Res() res: Response) {
+    return this.purchaseService.exportToExcel(res);
   }
 }

@@ -9,6 +9,7 @@ import {
   Request,
   UseGuards,
   Query,
+  Res,
 } from '@nestjs/common';
 import { SalaryService } from './salary.service';
 import { CreateSalaryDto } from './dto/create-salary.dto';
@@ -24,6 +25,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 
 
 @ApiTags('Salary')
@@ -118,5 +120,13 @@ export class SalaryController {
   remove(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
     return this.salaryService.remove(id, userId);
+  }
+
+  @Get('export/excel')
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER, UserRole.STAFF])
+  @ApiOperation({ summary: 'Export salary list to Excel' })
+  async exportToExcel(@Res() res: Response) {
+    return this.salaryService.exportToExcel(res);
   }
 }

@@ -9,6 +9,7 @@ import {
   Request,
   UseGuards,
   Query,
+  Res,
 } from '@nestjs/common';
 import { PartnerService } from './partner.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
@@ -18,6 +19,7 @@ import { JwtRoleGuard } from 'src/shared/guards/role.guard';
 import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Response } from 'express';
 
 @ApiTags('Partner')
 @Controller('partner')
@@ -139,5 +141,14 @@ export class PartnerController {
   remove(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
     return this.partnerService.remove(id, userId);
+  }
+
+
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.STAFF, UserRole.OWNER])
+  @Get('export/excel')
+  @ApiOperation({ summary: 'Export all partners to Excel' })
+  async exportToExcel(@Res() res: Response) {
+    return this.partnerService.exportToExcel(res);
   }
 }
