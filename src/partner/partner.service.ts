@@ -7,7 +7,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
-import { Prisma } from 'generated/prisma';
+import { Prisma, Region } from 'generated/prisma';
 import * as ExcelJS from 'exceljs';
 import e, { Response } from 'express';
 import { formatPhoneNumber } from 'src/shared/formatPhone';
@@ -21,6 +21,7 @@ export class PartnerService {
       where: { phoneNumber: dto.phoneNumber },
     });
     if (exists) throw new ConflictException('Phone number already in use');
+
 
     const newPhoneNumber = formatPhoneNumber(dto.phoneNumber)
 

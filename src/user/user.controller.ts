@@ -38,13 +38,15 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @UseGuards(JwtAuthGuard, JwtRoleGuard)
+  @Roles([UserRole.OWNER])
   @Post('/create-user')
   @ApiOperation({ summary: 'Register new user' })
   @ApiBody({
     schema: {
       example: {
         fullName: 'Ruzimuhammad Yusupov',
-        phoneNumber: '+998-90-123-45-67',
+        phoneNumber: '998901234567',
         email: 'yusupovruzimuhammad4@gmail.com',
         password: '123456',
         image: 'image.jpg',
@@ -114,7 +116,7 @@ export class UserController {
     schema: {
       example: {
         fullName: 'Nurullo Yusupov',
-        phoneNumber: '+998-90-321-45-67',
+        phoneNumber: '998903214567',
         balance: 0,
         role: 'STAFF'
       }
