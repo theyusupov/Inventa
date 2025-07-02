@@ -32,6 +32,9 @@ export class PaymentService {
 
       const debt = await this.prisma.debt.findUnique({ where: { id: debtId } });
       if (!debt) throw new BadRequestException('Debt not found');
+      if (debt.total === 0) {
+          throw new BadRequestException('Debt is already fully paid');
+  }
 
       const contract = await this.prisma.contract.findUnique({ where: { id: debt.contractId } });
       if (!contract || ['CANCELLED', 'COMPLETED'].includes(contract.status!)) {

@@ -31,13 +31,19 @@ export class ContractService {
     if (!product.isActive) throw new BadRequestException("This product isn't active at the moment");
     if (product.quantity < quantity) throw new BadRequestException('Product quantity is not enough');
 
+    let parBalance = 0;
+
+    if(partner.balance>0){
+      parBalance = partner.balance
+    }
   
     const price = dtoSellPrice ?? product.sellPrice;
     const usedQuantity =  quantity;
-    const total = price * usedQuantity;
+    const total = ( price * usedQuantity) - parBalance;
     const monthlyPayment = total / (repaymentPeriod ?? category.repaymentPeriod);
 
     
+
     const contract = await this.prisma.contract.create({
       data: {
         ...dto,
@@ -63,7 +69,7 @@ export class ContractService {
 
       await this.prisma.partner.update({
         where: { id: partnerId },
-        data: { balance: partner.balance - total },
+        data: { balance: partner.balance - (price*usedQuantity) },
       });
     
 
@@ -161,6 +167,115 @@ export class ContractService {
     return contract;
   }
 
+  async update(id: string, dto: Partial<CreateContractDto>, userId: string) {
+    const existingContract = await this.prisma.contract.findUnique({
+      where: { id },
+      include: { product: true, partner: true, debts: true },
+    });
+
+    if (!existingContract) throw new NotFoundException('Contract not found');
+
+    const { product, partner, debts } = existingContract;
+
+    const oldQuantity = existingContract.quantity;
+    const oldPrice = existingContract.sellPrice;
+    const oldTotal = existingContract.startTotal;
+
+    const newQuantity = dto.quantity ?? oldQuantity;
+    const newPrice = dto.sellPrice ?? oldPrice;
+    const repaymentPeriod = dto.repaymentPeriod ?? existingContract.repaymentPeriod;
+
+    const quantityDifference = newQuantity - oldQuantity;
+
+    if (quantityDifference > 0 && product.quantity < quantityDifference) {
+      throw new BadRequestException('Product quantity is not enough in stock');
+    }
+
+    const updatedProductQuantity = product.quantity - quantityDifference;
+    const newTotal = newQuantity * newPrice;
+    const newMonthlyPayment = newTotal / repaymentPeriod;
+
+    const isCompleted = existingContract.status === 'COMPLETED';
+    const previousDebt = debts?.[0]; 
+
+    let amountAlreadyPaid;
+    if (isCompleted && previousDebt) {
+      amountAlreadyPaid = oldTotal; 
+    } else if (previousDebt) {
+      amountAlreadyPaid = oldTotal! - previousDebt.total;
+    }
+
+    const updatedDebtAmount = newTotal - amountAlreadyPaid;
+
+    if (updatedDebtAmount < 0) {
+      throw new BadRequestException('New total is less than already paid amount');
+    }
+
+    const updatedContract = await this.prisma.contract.update({
+      where: { id },
+      data: {
+        ...dto,
+        quantity: newQuantity,
+        sellPrice: newPrice,
+        status:"ONGOING",
+        repaymentPeriod,
+        startTotal: newTotal,
+        monthlyPayment: newMonthlyPayment,
+      },
+    });
+
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: {
+        quantity: updatedProductQuantity,
+        isActive: updatedProductQuantity > 0,
+      },
+    });
+
+    if (previousDebt) {
+      await this.prisma.debt.update({
+        where: { id: previousDebt.id },
+        data: {
+          total: updatedDebtAmount,
+          remainingMonths: repaymentPeriod,
+        },
+      });
+    } else if (updatedDebtAmount > 0) {
+      await this.prisma.debt.create({
+        data: {
+          contractId: id,
+          total: updatedDebtAmount,
+          remainingMonths: repaymentPeriod,
+        },
+      });
+    }
+
+    const balanceChange = oldTotal! - newTotal;
+    await this.prisma.partner.update({
+      where: { id: partner.id },
+      data: {
+        balance: partner.balance + balanceChange,
+      },
+    });
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'contract',
+        actionType: 'UPDATE',
+        recordId: id,
+        oldValue: existingContract,
+        newValue: updatedContract,
+        comment: 'Contract updated (dynamic balance + debt adjusted)',
+        userId,
+      },
+    });
+
+    return {
+      message: 'Contract updated successfully',
+      contract: updatedContract,
+    };
+  }
+
   async remove(id: string, userId: string) {
     const existing = await this.prisma.contract.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Contract not found');
@@ -218,7 +333,7 @@ export class ContractService {
         index + 1,
         contract.id,
         contract.partner?.fullName || '—',
-        contract.partner?.phoneNumber || '—',
+        contract.partner?.phoneNumbers || '—',
         contract.product?.name || '—',
         contract.quantity,
         contract.sellPrice,

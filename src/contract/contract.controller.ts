@@ -69,6 +69,29 @@ export class ContractController {
   }
 
 
+  @UseGuards(JwtAuthGuard)
+  @Roles([UserRole.STAFF])
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update contract and recalculate totals' })
+  @ApiBody({
+    type: CreateContractDto, 
+    examples: {
+      updatePriceOnly: {
+        summary: 'Update only sell price',
+        value: {
+          sellPrice: 600,
+          isArchive: true
+        },
+      },
+    },
+  })
+  update(@Param('id') id: string, @Body() dto: Partial<CreateContractDto>, @Request() req) {
+    const userId = req.user.id;
+    return this.contractService.update(id, dto, userId);
+  }
+
+
+
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Delete(':id')

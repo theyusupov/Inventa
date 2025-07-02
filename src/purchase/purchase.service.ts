@@ -45,11 +45,13 @@ export class PurchaseService {
     const productBuyPrice = product.quantity * product.buyPrice;
     const purchaseBuyPrice = purchase.quantity * purchase.buyPrice;
     const newBuyPrice  = (productBuyPrice + purchaseBuyPrice) / (product.quantity + purchase.quantity)
-
+    const newSellPrice =  newBuyPrice + ((30 * newBuyPrice) / 100)
     await this.prisma.product.update({
       where: { id: product.id },
       data: {
+        isActive:true,
         buyPrice: newBuyPrice,
+        sellPrice: newSellPrice,
         quantity: product.quantity+finalQuantity
       },
     });

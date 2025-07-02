@@ -10,23 +10,19 @@ import { UpdatePartnerDto } from './dto/update-partner.dto';
 import { Prisma, Region } from 'generated/prisma';
 import * as ExcelJS from 'exceljs';
 import e, { Response } from 'express';
-import { formatPhoneNumber } from 'src/shared/formatPhone';
 
 @Injectable()
 export class PartnerService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreatePartnerDto, userId: string) {
-    const exists = await this.prisma.partner.findUnique({
-      where: { phoneNumber: dto.phoneNumber },
+    const exists = await this.prisma.partner.findFirst({
+      where: { phoneNumbers:{hasSome: dto.phoneNumbers }},
     });
     if (exists) throw new ConflictException('Phone number already in use');
 
-
-    const newPhoneNumber = formatPhoneNumber(dto.phoneNumber)
-
     const partner = await this.prisma.partner.create({
-      data: { ...dto, userId, phoneNumber:newPhoneNumber },
+      data: { ...dto, userId },
     });
 
     await this.prisma.actionHistory.create({
@@ -103,18 +99,16 @@ export class PartnerService {
     const existing = await this.prisma.partner.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Partner not found');
 
-    if (dto.phoneNumber && dto.phoneNumber !== existing.phoneNumber) {
-      const phoneUsed = await this.prisma.partner.findUnique({
-        where: { phoneNumber: dto.phoneNumber },
+    if (dto.phoneNumbers && dto.phoneNumbers.some((phone)=>existing.phoneNumbers.includes(phone))) {
+      const phoneUsed = await this.prisma.partner.findFirst({
+        where: { phoneNumbers: {hasSome:dto.phoneNumbers} },
       });
       if (phoneUsed) throw new ConflictException('Phone number already in use');
     }
 
-    const newPhoneNumber = dto.phoneNumber ? formatPhoneNumber(dto.phoneNumber) : existing.phoneNumber
-
     const updated = await this.prisma.partner.update({
       where: { id },
-      data: { ...dto, updatedAt: new Date(), phoneNumber:newPhoneNumber },
+      data: { ...dto, updatedAt: new Date() },
     });
 
     await this.prisma.actionHistory.create({
@@ -181,7 +175,7 @@ export class PartnerService {
           index + 1,
           partner.id,
           partner.fullName,
-          partner.phoneNumber,
+          partner.phoneNumbers,
           partner.address,
           partner.isActive ? 'Yes' : 'No',
           partner.balance,

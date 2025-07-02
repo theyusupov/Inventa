@@ -19,9 +19,12 @@ export class ProductService {
     const category = await this.prisma.category.findUnique({ where: { id: createProductDto.categoryId } });
     if (!category) throw new BadRequestException('Category not found');
 
+    const newSellPrice = createProductDto.sellPrice ?? createProductDto.buyPrice + ((30 * createProductDto.buyPrice) / 100)
+
     const product = await this.prisma.product.create({
       data: {
         ...createProductDto,
+        sellPrice: newSellPrice,
         quantity:0,
         userId,
       },

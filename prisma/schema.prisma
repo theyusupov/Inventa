@@ -86,7 +86,7 @@ enum ContractStatus {
 model User {
   id           String @id @default(uuid())
   fullName     String
-  phoneNumber  String @unique
+  phoneNumbers String[]
   email        String @unique
   password     String
   image        String
@@ -111,7 +111,7 @@ model User {
 model Partner {
   id           String @id @default(uuid())
   fullName     String
-  phoneNumber  String @unique
+  phoneNumbers  String[]
   address      Region?
   isActive     Boolean
   balance      Int
@@ -198,8 +198,9 @@ model Contract {
   partnerId         String
   userId            String?
   status       ContractStatus?
+  isArchive    Boolean @default(false)
   createdAt    DateTime? @default(now())
-  updatedAt    DateTime?
+  updatedAt    DateTime? 
  
 
   user       User? @relation(fields: [userId], references: [id], onDelete: Cascade)

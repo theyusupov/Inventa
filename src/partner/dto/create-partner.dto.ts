@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsBoolean, IsInt, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsBoolean, IsInt, IsEnum, IsArray } from 'class-validator';
 import { PartnerRole, Region } from 'generated/prisma';
 
 
@@ -7,9 +7,10 @@ export class CreatePartnerDto {
   @IsNotEmpty()
   fullName: string;
 
+  @IsArray()
   @IsString()
   @IsNotEmpty()
-  phoneNumber: string;
+  phoneNumbers: string[];
 
   @IsEnum(Region)
   @IsNotEmpty()

@@ -14,7 +14,6 @@ import * as fs from 'fs/promises';
 import { Prisma } from 'generated/prisma';
 import { Response } from 'express';
 import * as ExcelJS from 'exceljs';
-import { formatPhoneNumber } from 'src/shared/formatPhone';
 
 
 @Injectable()
@@ -27,19 +26,18 @@ export class UserService {
   async createUser(dto: RegisterDto) {
     const [emailExists, phoneExists] = await Promise.all([
       this.prisma.user.findUnique({ where: { email: dto.email } }),
-      this.prisma.user.findUnique({ where: { phoneNumber: dto.phoneNumber } }),
+      this.prisma.user.findFirst({ where: { phoneNumbers: {hasSome: dto.phoneNumbers }} }),
     ]);
 
     if (emailExists) throw new ConflictException('Email already in use');
     if (phoneExists) throw new ConflictException('Phone number already in use');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const formattedPhone = formatPhoneNumber(dto.phoneNumber);
 
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName,
-        phoneNumber: formattedPhone,
+        phoneNumbers: dto.phoneNumbers,
         image: dto.image,
         password: hashedPassword,
         email: dto.email,
@@ -64,7 +62,7 @@ export class UserService {
       message: 'Created successfully',
       data: {
         fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
+        phoneNumbers: user.phoneNumbers,
         image: user.image,
         email: user.email,
         balance: user.balance,
@@ -158,9 +156,9 @@ export class UserService {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
-    if (dto.phoneNumber && dto.phoneNumber !== user.phoneNumber) {
-      const existingPhone = await this.prisma.user.findUnique({
-        where: { phoneNumber: dto.phoneNumber },
+    if (dto.phoneNumbers && dto.phoneNumbers.some(phone => user.phoneNumbers.includes(phone))) {
+      const existingPhone = await this.prisma.user.findFirst({
+        where: { phoneNumbers: {hasSome: dto.phoneNumbers }},
       });
       if (existingPhone) throw new ConflictException('Phone number already in use');
     }
@@ -178,16 +176,12 @@ export class UserService {
       ? await bcrypt.hash(dto.password, 10)
       : user.password;
 
-    const newPhoneNumber = dto.phoneNumber
-      ? formatPhoneNumber(dto.phoneNumber)
-      : user.phoneNumber;
 
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
         ...dto,
-        password: hashedPassword,
-        phoneNumber: newPhoneNumber
+        password: hashedPassword
       },
     });
 
@@ -207,7 +201,7 @@ export class UserService {
       message: 'User updated successfully',
       data: {
         fullName: updated.fullName,
-        phoneNumber: updated.phoneNumber,
+        phoneNumber: updated.phoneNumbers,
         image: updated.image,
         email: updated.email,
         balance: updated.balance,
@@ -279,7 +273,7 @@ export class UserService {
       worksheet.addRow([
         index + 1,
         user.fullName,
-        user.phoneNumber,
+        user.phoneNumbers,
         user.email,
         user.balance,
         user.role,

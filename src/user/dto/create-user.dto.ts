@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsEmail, IsBoolean, IsInt, IsEnum, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsBoolean, IsInt, IsEnum, IsOptional, IsArray } from 'class-validator';
 import { UserRole} from 'generated/prisma';
 
 export class CreateUserDto {
@@ -6,9 +6,10 @@ export class CreateUserDto {
   @IsNotEmpty()
   fullName: string;
 
+  @IsArray()
   @IsString()
   @IsNotEmpty()
-  phoneNumber: string;
+  phoneNumbers: string[];
 
   @IsEmail()
   email?: string;
@@ -48,9 +49,10 @@ export class CreateUserDto {
   @IsNotEmpty()
   fullName: string;
 
+  @IsArray()
   @IsString()
   @IsNotEmpty()
-  phoneNumber: string;
+  phoneNumbers: string[];
 
   @IsEmail()
   @IsNotEmpty()

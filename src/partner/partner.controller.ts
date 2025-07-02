@@ -39,7 +39,7 @@ export class PartnerController {
         summary: 'Seller example',
         value: {
           fullName: 'Ali Karimov',
-          phoneNumber: '998901234567',
+          phoneNumbers: ['998901234567', '998323223129'],
           address: 'Andijon',
           isActive: true,
           balance: 0,
@@ -50,7 +50,7 @@ export class PartnerController {
         summary: 'Customer example',
         value: {
           fullName: 'Olimaxon Ismoilova',
-          phoneNumber: '998911112233',
+          phoneNumbers: ['998904234567', '998383223129'],
           address: 'Buxoro',
           isActive: true,
           balance: 0,
@@ -116,7 +116,7 @@ export class PartnerController {
         summary: 'Sample update',
         value: {
           fullName: 'Ali Karimov',
-          phoneNumber: '998901234567',
+          phoneNumbers: ['998902234567', '998423223129'],
           address: 'Toshkent',
           isActive: true,
           balance: 5000,
