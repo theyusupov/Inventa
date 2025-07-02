@@ -17,6 +17,7 @@ export class PurchaseService {
 
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
+    if(partner.role==='CUSTOMER') throw new BadRequestException('You can not buy product from customers');
 
     const finalBuyPrice = buyPrice ?? product.buyPrice;
     const finalQuantity = quantity ?? 0;

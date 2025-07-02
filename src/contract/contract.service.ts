@@ -76,7 +76,6 @@ export class ContractService {
     const debt = await this.prisma.debt.create({
       data: {
         total,
-        remainingMonths: (repaymentPeriod ?? category.repaymentPeriod),
         contractId: contract.id,
       },
     });
@@ -237,7 +236,6 @@ export class ContractService {
         where: { id: previousDebt.id },
         data: {
           total: updatedDebtAmount,
-          remainingMonths: repaymentPeriod,
         },
       });
     } else if (updatedDebtAmount > 0) {
@@ -245,7 +243,6 @@ export class ContractService {
         data: {
           contractId: id,
           total: updatedDebtAmount,
-          remainingMonths: repaymentPeriod,
         },
       });
     }

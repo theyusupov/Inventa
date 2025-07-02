@@ -216,7 +216,6 @@ model Contract {
 model Debt {
   id                String @id @default(uuid()) 
   total             Int
-  remainingMonths   Int?
   contractId        String
   createdAt    DateTime? @default(now())
   updatedAt    DateTime?
@@ -256,7 +255,6 @@ model Payment {
   id                String @id @default(uuid()) 
   amount            Int
   comment           String
-  monthsPaid        Int?
   paymentType       PaymentType
   type              Type
   partnerId         String

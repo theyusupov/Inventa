@@ -11,57 +11,48 @@ export class PaymentService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreatePaymentDto, userId: string) {
-    const { debtId, partnerId, type, amount } = dto;
+    const { debtId, partnerId, type, amount, comment, paymentType } = dto;
 
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
     if (
       (type === 'OUT' && partner.role === 'CUSTOMER') ||
-      (type === 'IN' && partner.role === 'SELLER') 
+      (type === 'IN' && partner.role === 'SELLER')
     ) {
       throw new BadRequestException('Payment type does not match with partner role');
+    }
+
+    if (partner.role === 'SELLER' && debtId) {
+      throw new BadRequestException('Sellers cannot make payments with debtId');
+    }
+
+    if (partner.role === 'CUSTOMER' && partner.balance < 0 && !debtId) {
+      throw new BadRequestException('Customer with negative balance must provide a debtId');
     }
 
     let payment;
 
     if (debtId) {
-      if (partner.role !== 'CUSTOMER') {
-        throw new BadRequestException("In a seller role, payment for a contract is not allowed.");
-      }
-
       const debt = await this.prisma.debt.findUnique({ where: { id: debtId } });
       if (!debt) throw new BadRequestException('Debt not found');
-      if (debt.total === 0) {
-          throw new BadRequestException('Debt is already fully paid');
-  }
+      if (debt.total === 0) throw new BadRequestException('Debt is already fully paid');
 
       const contract = await this.prisma.contract.findUnique({ where: { id: debt.contractId } });
       if (!contract || ['CANCELLED', 'COMPLETED'].includes(contract.status!)) {
         throw new BadRequestException('This contract is invalid.');
       }
 
-      const monthlyPayment = Number(contract.monthlyPayment);
-      const calculatedMonths = amount / monthlyPayment;
-
-      if (!Number.isInteger(calculatedMonths)) {
-        throw new BadRequestException(
-          `The amount must be divisible by monthly payment. Expected exact multiple of ${monthlyPayment}.`
-        );
-      }
+      const newDebtTotal = Math.max(debt.total - amount, 0);
 
       await this.prisma.debt.update({
         where: { id: debtId },
-        data: {
-          total: debt.total - amount,
-          remainingMonths: (debt.remainingMonths ?? 0) - calculatedMonths,
-        },
+        data: { total: newDebtTotal },
       });
 
-      const updatedDebt = await this.prisma.debt.findUnique({ where: { id: debtId } });
-      if (updatedDebt && updatedDebt.remainingMonths === 0 && updatedDebt.total === 0) {
+      if (newDebtTotal === 0) {
         await this.prisma.contract.update({
-          where: { id: debt.contractId },
+          where: { id: contract.id },
           data: { status: 'COMPLETED' },
         });
       }
@@ -69,13 +60,12 @@ export class PaymentService {
       payment = await this.prisma.payment.create({
         data: {
           amount,
-          comment: dto.comment,
-          paymentType: dto.paymentType,
+          comment,
+          paymentType,
           type,
           partnerId,
           userId,
           debtId,
-          monthsPaid: calculatedMonths,
         },
       });
 
@@ -85,24 +75,29 @@ export class PaymentService {
       });
 
     } else {
-      if (partner.role !== 'SELLER') {
-        throw new BadRequestException("Customers are not allowed to make payments without a debtId.");
+
+      if (partner.role === 'CUSTOMER' && partner.balance < 0) {
+        throw new BadRequestException('Customer with negative balance must provide a debtId');
       }
 
       payment = await this.prisma.payment.create({
         data: {
           amount,
-          comment: dto.comment,
-          paymentType: dto.paymentType,
+          comment,
+          paymentType,
           type,
           partnerId,
           userId,
         },
       });
 
+      const balanceChange = partner.role === 'CUSTOMER'
+        ? partner.balance + amount
+        : partner.balance - amount;
+
       await this.prisma.partner.update({
         where: { id: partnerId },
-        data: { balance: partner.balance - amount },
+        data: { balance: balanceChange },
       });
     }
 
@@ -242,7 +237,6 @@ async exportToExcel(res: Response) {
       payment.partner?.role || '—',
       payment.amount,
       payment.comment,
-      payment.monthsPaid ?? '—',
       payment.paymentType,
       payment.type,
       payment.debtId ?? '—',
