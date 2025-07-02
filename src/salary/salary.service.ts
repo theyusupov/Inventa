@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
@@ -96,6 +96,16 @@ export class SalaryService {
   async update(id: string, dto: UpdateSalaryDto, userId: string) {
     const oldSalary = await this.prisma.salary.findUnique({ where: { id } });
     if (!oldSalary) throw new NotFoundException('Salary not found');
+
+    const requestUser = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!requestUser) throw new NotFoundException('Requesting user not found');
+
+    const isCreator = oldSalary.userId === userId;
+    const isOwner = requestUser.role === 'OWNER';
+
+    if (!isCreator && !isOwner) {
+      throw new ForbiddenException('You can update only salaries which you created or if you are owner');
+    }
 
     const user = await this.prisma.user.findUnique({ where: { id: oldSalary.userId! } });
     if (!user) throw new NotFoundException('User not found');

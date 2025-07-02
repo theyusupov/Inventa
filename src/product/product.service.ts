@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -102,6 +102,16 @@ export class ProductService {
   async update(id: string, dto: UpdateProductDto, userId: string) {
     const oldProduct = await this.prisma.product.findUnique({ where: { id } });
     if (!oldProduct) throw new NotFoundException('Product not found');
+
+    const requestUser = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!requestUser) throw new NotFoundException('Requesting user not found');
+
+    const isCreator = oldProduct.userId === userId;
+    const isOwner = requestUser.role === 'OWNER';
+
+    if (!isCreator && !isOwner) {
+      throw new ForbiddenException('You can update only products which you created or if you are owner');
+    }
 
     let imageFileName = oldProduct.image;
 

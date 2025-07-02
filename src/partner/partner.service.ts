@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
@@ -99,6 +100,15 @@ export class PartnerService {
     const existing = await this.prisma.partner.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Partner not found');
 
+    const requestUser = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!requestUser) throw new NotFoundException('Requesting user not found');
+
+    const isCreator = existing.userId === userId;
+    const isOwner = requestUser.role === 'OWNER';
+
+    if (!isCreator && !isOwner) {
+      throw new ForbiddenException('You can update only partners which you created or if you are owner');
+    }
     if (dto.phoneNumbers && dto.phoneNumbers.some((phone)=>existing.phoneNumbers.includes(phone))) {
       const phoneUsed = await this.prisma.partner.findFirst({
         where: { phoneNumbers: {hasSome:dto.phoneNumbers} },
