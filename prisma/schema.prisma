@@ -112,8 +112,11 @@ model Partner {
   id           String @id @default(uuid())
   fullName     String
   phoneNumbers  String[]
+  location     Json[]
   address      Region?
   isActive     Boolean
+  isArchive    Boolean @default(false)
+  pin          Boolean @default(false)
   balance      Int
   role         PartnerRole
   userId       String?
@@ -198,7 +201,6 @@ model Contract {
   partnerId         String
   userId            String?
   status       ContractStatus?
-  isArchive    Boolean @default(false)
   createdAt    DateTime? @default(now())
   updatedAt    DateTime? 
  

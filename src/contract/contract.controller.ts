@@ -79,9 +79,8 @@ export class ContractController {
       updatePriceOnly: {
         summary: 'Update only sell price',
         value: {
-          sellPrice: 600,
-          isArchive: true
-        },
+          sellPrice: 600       
+         },
       },
     },
   })

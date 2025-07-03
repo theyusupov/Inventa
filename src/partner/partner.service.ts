@@ -17,13 +17,18 @@ export class PartnerService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreatePartnerDto, userId: string) {
+    const mappedLocation = dto.location.map(loc => ({
+    lat: loc.lat,
+    lng: loc.lng,
+    }));
+
     const exists = await this.prisma.partner.findFirst({
       where: { phoneNumbers:{hasSome: dto.phoneNumbers }},
     });
     if (exists) throw new ConflictException('Phone number already in use');
 
     const partner = await this.prisma.partner.create({
-      data: { ...dto, userId },
+      data: { ...dto, userId, location:mappedLocation },
     });
 
     await this.prisma.actionHistory.create({
@@ -116,9 +121,15 @@ export class PartnerService {
       if (phoneUsed) throw new ConflictException('Phone number already in use');
     }
 
+    const mappedLocation: Prisma.InputJsonValue[] | undefined =
+      dto.location?.map((loc) => ({
+        lat: loc.lat,
+        lng: loc.lng,
+      }));
+
     const updated = await this.prisma.partner.update({
       where: { id },
-      data: { ...dto, updatedAt: new Date() },
+      data: { ...dto, updatedAt: new Date(), location: mappedLocation  },
     });
 
     await this.prisma.actionHistory.create({
