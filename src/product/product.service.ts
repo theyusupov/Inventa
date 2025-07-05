@@ -25,7 +25,8 @@ export class ProductService {
       data: {
         ...createProductDto,
         sellPrice: newSellPrice,
-        quantity:0,
+        quantity: createProductDto.quantity ? createProductDto.quantity : 0,
+        isActive: (createProductDto.quantity&& createProductDto.quantity > 0) ? true : false,
         userId,
       },
     });
@@ -126,13 +127,22 @@ export class ProductService {
       imageFileName = dto.image;
     }
 
-    const updatedProduct = await this.prisma.product.update({
-      where: { id },
-      data: {
-        ...dto,
-        image: imageFileName,
-      },
-    });
+  let newIsActive;
+
+  if (dto.quantity !== undefined) {
+    newIsActive = dto.quantity > 0;
+  } else {
+    newIsActive = oldProduct.isActive; 
+  }
+
+  const updatedProduct = await this.prisma.product.update({
+    where: { id },
+    data: {
+      ...dto,
+      image: imageFileName,
+      isActive: newIsActive,
+    },
+  });
 
     await this.prisma.actionHistory.create({
       data: {

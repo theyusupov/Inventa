@@ -18,6 +18,9 @@ export class CreateProductDto {
   @IsBoolean()
   isActive: boolean;
 
+  @IsInt()
+  quantity: number;
+
   @IsString()
   description: string;
 
