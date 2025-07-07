@@ -19,17 +19,53 @@ export class ProductService {
     const category = await this.prisma.category.findUnique({ where: { id: createProductDto.categoryId } });
     if (!category) throw new BadRequestException('Category not found');
 
+    if (createProductDto.partnerId) {
+      var partner = await this.prisma.partner.findUnique({where: { id: createProductDto.partnerId }});
+      if (!partner)  throw new BadRequestException('Partner not found')
+      if (partner?.role!=='SELLER')  throw new BadRequestException('Role of the partner is cutomer')
+
+      }
+      const oldBalance = partner!.balance;
+
+
     const newSellPrice = createProductDto.sellPrice ?? createProductDto.buyPrice + ((30 * createProductDto.buyPrice) / 100)
+
+
 
     const product = await this.prisma.product.create({
       data: {
-        ...createProductDto,
+        name:createProductDto.name,
+        buyPrice:createProductDto.buyPrice,
+        unit:createProductDto.unit,
+        description:createProductDto.description,
+        image:createProductDto.image,
+        comment:createProductDto.comment,
+        categoryId: createProductDto.categoryId,
         sellPrice: newSellPrice,
         quantity: createProductDto.quantity ? createProductDto.quantity : 0,
         isActive: (createProductDto.quantity&& createProductDto.quantity > 0) ? true : false,
         userId,
       },
     });
+
+    if(createProductDto.quantity>0){
+      const buy = await this.prisma.purchase.create({
+        data: {
+          quantity: createProductDto.quantity,
+          buyPrice: createProductDto.buyPrice,
+          comment: createProductDto.comment,
+          userId: userId,
+          partnerId: createProductDto.partnerId??null,
+          productId: product.id,
+        },
+      });
+
+      await this.prisma.partner.update({where:{id:buy.partnerId},data:{balance: oldBalance+buy.quantity*buy.buyPrice}})
+    }
+
+
+
+
 
     await this.prisma.actionHistory.create({
       data: {

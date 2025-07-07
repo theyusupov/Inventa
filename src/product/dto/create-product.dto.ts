@@ -22,6 +22,9 @@ export class CreateProductDto {
   quantity: number;
 
   @IsString()
+  partnerId: string;
+
+  @IsString()
   description: string;
 
   @IsString()

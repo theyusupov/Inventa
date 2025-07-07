@@ -129,6 +129,7 @@ model Partner {
   contracts    Contract[]
   payments     Payment[]
 
+
 }
 
 
@@ -166,6 +167,7 @@ model Product {
 
   user         User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
 
   purchases                Purchase[]
   contracts                Contract[]
