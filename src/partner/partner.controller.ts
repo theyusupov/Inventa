@@ -121,7 +121,6 @@ export class PartnerController {
           phoneNumbers: ['998902234567', '998423223129'],
           address: 'Toshkent',
           isActive: true,
-          balance: 5000,
           role: 'SELLER',
         },
       },

@@ -19,7 +19,7 @@ import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 
-@ApiTags('Debt')
+ @ApiTags('Debt')
 @Controller('debt')
 export class DebtController {
   constructor(private readonly debtService: DebtService) {}
@@ -49,7 +49,6 @@ export class DebtController {
     });
   }
 
-
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get(':id')
@@ -68,5 +67,4 @@ export class DebtController {
     const userId = req.user.id;
     return this.debtService.remove(id, userId);
   }
-
 }

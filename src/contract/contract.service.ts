@@ -14,65 +14,51 @@ import { Response } from 'express';
 @Injectable()
 export class ContractService {
   constructor(private readonly prisma: PrismaService) {}
-
   async create(dto: CreateContractDto, userId: string) {
-    const { productId, partnerId, quantity, repaymentPeriod, sellPrice: dtoSellPrice } = dto;
+    const { partnerId, repaymentPeriod, products } = dto;
 
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
-    if (!product) throw new BadRequestException('Product not found');
-
-    const category = await this.prisma.category.findUnique({ where: { id: product.categoryId } });
-    if (!category) throw new BadRequestException('Category not found');
-
-    const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
+   const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
-    if(partner.role==='SELLER') throw new BadRequestException(`You can't make contract with ${partner.role.toLowerCase()}s`);
-
-    if (!product.isActive) throw new BadRequestException("This product isn't active at the moment");
-    if (product.quantity < quantity) throw new BadRequestException('Product quantity is not enough');
-
-    let parBalance = 0;
-
-    if(partner.balance>0){
-      parBalance = partner.balance
+    const productChecks = await Promise.all(
+    products.map((product) =>
+      this.prisma.product.findUnique({ where: { id: product.productId } })
+    )
+  );
+    for (const [index, product] of productChecks.entries()) {
+      if (!product) {
+        throw new NotFoundException(
+          `Product with id ${products[index].productId} not found`
+        );
+      }
     }
-  
-    const price = dtoSellPrice ?? product.sellPrice;
-    const usedQuantity =  quantity;
-    const total = ( price * usedQuantity) - parBalance;
-    const monthlyPayment = total / (repaymentPeriod ?? category.repaymentPeriod);
 
-    
+    const total = products.reduce(
+  (acc, product) => acc + product.sellPrice * product.quantity,
+  0,
+    );
 
     const contract = await this.prisma.contract.create({
       data: {
-        ...dto,
-        quantity: usedQuantity,
-        userId,
+        partnerId,
+        repaymentPeriod,
         status: 'ONGOING',
         startTotal: total,
-        monthlyPayment,
-        sellPrice: price,
-        repaymentPeriod: repaymentPeriod ?? category.repaymentPeriod
+        userId,
       },
     });
 
-      const newQuantity = product.quantity - quantity;
+    await this.prisma.contractProduct.createMany({
+      data: products.map((product) => ({
+        contractId: contract.id,
+        productId: product.productId,
+        quantity: product.quantity,
+        sellPrice: product.sellPrice,
+      })),
+    });
 
-      await this.prisma.product.update({
-        where: { id: productId },
-        data: {
-          quantity: newQuantity,
-          isActive: newQuantity > 0,
-        },
-      });
+  
 
-      await this.prisma.partner.update({
-        where: { id: partnerId },
-        data: { balance: partner.balance - (price*usedQuantity) },
-      });
-    
 
     const debt = await this.prisma.debt.create({
       data: {
@@ -80,6 +66,30 @@ export class ContractService {
         contractId: contract.id,
       },
     });
+
+    await this.prisma.partner.update({
+      where: { id: partnerId },
+      data: { balance: partner.balance - total },
+    });
+
+
+  for (const item of products) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: item.productId },
+    });
+
+
+    const newQuantity = product!.quantity - item.quantity;
+
+    await this.prisma.product.update({
+      where: { id: item.productId },
+      data: {
+        quantity: newQuantity,
+        isActive: newQuantity > 0,
+      },
+    });
+  }
+
 
     await this.prisma.actionHistory.create({
       data: {
@@ -103,7 +113,8 @@ export class ContractService {
       },
     });
 
-    return { message: 'Contract created successfully', contract };
+
+    return contract;
   }
 
   async findAll(params: {
@@ -158,7 +169,7 @@ export class ContractService {
         debts: true,
         returns: true,
         partner: true,
-        product: true,
+        products: true,
         user: true,
       },
     });
@@ -167,101 +178,168 @@ export class ContractService {
     return contract;
   }
 
-  async update(id: string, dto: Partial<CreateContractDto>, userId: string) {
-    const existingContract = await this.prisma.contract.findUnique({
-      where: { id },
-      include: { product: true, partner: true, debts: true },
-    });
+// async update(dto: UpdateContractDto, contractId: string, userId: string) {
+//   const { products } = dto;
 
-    if (!existingContract) throw new NotFoundException('Contract not found');
-    const requestUser = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!requestUser) throw new NotFoundException('Requesting user not found');
+//   const contract = await this.prisma.contract.findUnique({
+//     where: { id: contractId },
+//     include: {
+//       products: true,
+//       partner: true,
+//     },
+//   });
+//   if (!contract) throw new NotFoundException('Contract not found');
 
-    const isCreator = existingContract.userId === userId;
-    const isOwner = requestUser.role === 'OWNER';
+//   const partner = contract.partner;
+//   let updatedBalance = partner.balance;
 
-    if (!isCreator && !isOwner) {
-      throw new ForbiddenException('You can update only contracts which you created or if you are owner');
-    }
+//   for (const item of products!) {
+//     const contractProduct = contract.products.find(p => p.productId === item.productId);
+//     if (!contractProduct) {
+//       throw new NotFoundException(`Product ${item.productId} not found in this contract`);
+//     }
 
-    const { product, partner, debts } = existingContract;
+//     const product = await this.prisma.product.findUnique({
+//       where: { id: item.productId },
+//     });
+//     if (!product) {
+//       throw new NotFoundException(`Product ${item.productId} not found`);
+//     }
 
-    const oldQuantity = existingContract.quantity;
-    const oldPrice = existingContract.sellPrice;
-    const oldTotal = existingContract.startTotal;
+//     // old qiymatlar
+//     const oldQuantity = contractProduct.quantity;
+//     const oldPrice = contractProduct.sellPrice;
+//     const oldTotal = oldQuantity * oldPrice;
 
-    const newQuantity = dto.quantity ?? oldQuantity;
-    const newPrice = dto.sellPrice ?? oldPrice;
-    const repaymentPeriod = dto.repaymentPeriod ?? existingContract.repaymentPeriod;
+//     // yangi qiymatlar
+//     const newQuantity = item.quantity;
+//     const newPrice = item.sellPrice;
+//     const newTotal = newQuantity * newPrice;
 
-    const quantityDifference = newQuantity - oldQuantity;
+//     // farq
+//     const quantityDiff = newQuantity - oldQuantity;
+//     const priceDiff = newTotal - oldTotal;
 
-    if (quantityDifference > 0 && product.quantity < quantityDifference) {
-      throw new BadRequestException('Product quantity is not enough in stock');
-    }
+//     // product stokni yangilaymiz
+//     const updatedProductQuantity = product.quantity - quantityDiff;
+//     await this.prisma.product.update({
+//       where: { id: product.id },
+//       data: {
+//         quantity: updatedProductQuantity,
+//         isActive: updatedProductQuantity > 0,
+//       },
+//     });
 
-    const updatedProductQuantity = product.quantity - quantityDifference;
-    const newTotal = newQuantity * newPrice;
-    const newMonthlyPayment = newTotal / repaymentPeriod;
+//     // partner balansini yangilaymiz
+//     updatedBalance += oldTotal - newTotal;
 
-    const isCompleted = existingContract.status === 'COMPLETED';
-    const previousDebt = debts?.[0]; 
+//     // contractProduct ni yangilaymiz
+//     await this.prisma.contractProduct.update({
+//       where: { id: contractProduct.id },
+//       data: {
+//         quantity: newQuantity,
+//         sellPrice: newPrice,
+//       },
+//     });
+//   }
 
-    let amountAlreadyPaid;
-    if (isCompleted && previousDebt) {
-      amountAlreadyPaid = oldTotal; 
-    } else if (previousDebt) {
-      amountAlreadyPaid = oldTotal! - previousDebt.total;
-    }
+//   // partner balansini saqlaymiz
+//   await this.prisma.partner.update({
+//     where: { id: partner.id },
+//     data: {
+//       balance: updatedBalance,
+//     },
+//   });
 
-    const updatedDebtAmount = newTotal - amountAlreadyPaid;
+//   // tarixga yozib qo‘yamiz
+//   await this.prisma.actionHistory.create({
+//     data: {
+//       tableName: 'contract',
+//       actionType: 'UPDATE',
+//       recordId: contract.id,
+//       // newValue: dto,
+//       comment: 'Contract updated',
+//       userId,
+//     },
+//   });
 
-    if (updatedDebtAmount < 0) {
-      throw new BadRequestException('New total is less than already paid amount');
-    }
+//   return { message: 'Contract updated successfully' };
+// }
 
-    const updatedContract = await this.prisma.contract.update({
-      where: { id },
-      data: {
-        ...dto,
-        quantity: newQuantity,
-        sellPrice: newPrice,
-        status:"ONGOING",
-        repaymentPeriod,
-        startTotal: newTotal,
-        monthlyPayment: newMonthlyPayment,
+  async update(dto: UpdateContractDto, contractId: string, userId: string) {
+    const { products } = dto;
+
+    const contract = await this.prisma.contract.findUnique({
+      where: { id: contractId },
+      include: {
+        products: true,
+        partner: true,
       },
     });
+    if (!contract) throw new NotFoundException('Contract not found');
 
-    await this.prisma.product.update({
-      where: { id: product.id },
-      data: {
-        quantity: updatedProductQuantity,
-        isActive: updatedProductQuantity > 0,
-      },
-    });
+    const partner = contract.partner;
+    if (!partner) throw new NotFoundException('Partner not found for this contract');
 
-    if (previousDebt) {
-      await this.prisma.debt.update({
-        where: { id: previousDebt.id },
+    let updatedBalance: number = Number(partner.balance) || 0;
+
+    for (const item of products!) {
+      const contractProduct = contract.products.find(
+        p => p.productId === item.productId,
+      );
+      if (!contractProduct) {
+        throw new NotFoundException(
+          `Product ${item.productId} not found in this contract`,
+        );
+      }
+
+      const product = await this.prisma.product.findUnique({
+        where: { id: item.productId },
+      });
+      if (!product) {
+        throw new NotFoundException(`Product ${item.productId} not found`);
+      }
+
+      // eski qiymatlar
+      const oldQuantity = contractProduct.quantity ;
+      const oldPrice = contractProduct.sellPrice ;
+      const oldTotal = oldQuantity * oldPrice;
+
+      // yangi qiymatlar
+      const newQuantity = item.quantity || 0;
+      const newPrice = item.sellPrice || 0;
+      const newTotal = newQuantity * newPrice;
+
+      // productning stokini yangilash
+      const quantityDiff = newQuantity - oldQuantity;
+      const updatedProductQuantity = product.quantity - quantityDiff;
+
+      await this.prisma.product.update({
+        where: { id: product.id },
         data: {
-          total: updatedDebtAmount,
+          quantity: updatedProductQuantity,
+          isActive: updatedProductQuantity > 0,
         },
       });
-    } else if (updatedDebtAmount > 0) {
-      await this.prisma.debt.create({
+
+      // partner balansini yangilash
+      updatedBalance += oldTotal - newTotal;
+
+      // contractProduct ni yangilash
+      await this.prisma.contractProduct.update({
+        where: { id: contractProduct.id },
         data: {
-          contractId: id,
-          total: updatedDebtAmount,
+          quantity: newQuantity,
+          sellPrice: newPrice,
         },
       });
     }
 
-    const balanceChange = oldTotal! - newTotal;
+    // partnerning yangilangan balansini saqlash
     await this.prisma.partner.update({
       where: { id: partner.id },
       data: {
-        balance: partner.balance + balanceChange,
+        balance: Math.round(updatedBalance),
       },
     });
 
@@ -269,18 +347,13 @@ export class ContractService {
       data: {
         tableName: 'contract',
         actionType: 'UPDATE',
-        recordId: id,
-        oldValue: existingContract,
-        newValue: updatedContract,
-        comment: 'Contract updated (dynamic balance + debt adjusted)',
+        recordId: contract.id,
+        comment: 'Contract updated',
         userId,
       },
     });
 
-    return {
-      message: 'Contract updated successfully',
-      contract: updatedContract,
-    };
+    return { message: 'Contract updated successfully' };
   }
 
   async remove(id: string, userId: string) {
@@ -300,69 +373,5 @@ export class ContractService {
     });
 
     return { message: 'Contract deleted successfully' };
-  }
-
-  async exportToExcel(res: Response) {
-    const contracts = await this.prisma.contract.findMany({
-      include: {
-        partner: true,
-        product: true,
-        user: true,
-        debts: true,
-        returns: true,
-      },
-    });
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Contracts');
-
-    worksheet.addRow([
-      '№',
-      'Contract ID',
-      'Partner Name',
-      'Partner Phone',
-      'Product Name',
-      'Quantity',
-      'Price',
-      'Start Total',
-      'Monthly Payment',
-      'Repayment Period',
-      'Contract Status',
-      'User',
-      'Created At',
-      'Updated At',
-      'Debt Count',
-      'Return Count',
-    ]);
-
-    contracts.forEach((contract, index) => {
-      worksheet.addRow([
-        index + 1,
-        contract.id,
-        contract.partner?.fullName || '—',
-        contract.partner?.phoneNumbers || '—',
-        contract.product?.name || '—',
-        contract.quantity,
-        contract.sellPrice,
-        contract.startTotal,
-        contract.monthlyPayment,
-        contract.repaymentPeriod,
-        contract.status || '—',
-        contract.user?.fullName || '—',
-        contract.createdAt?.toISOString().split('T')[0] || '',
-        contract.updatedAt?.toISOString().split('T')[0] || '',
-        contract.debts?.length || 0,
-        contract.returns?.length || 0,
-      ]);
-    });
-
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader('Content-Disposition', 'attachment; filename=contracts.xlsx');
-
-    await workbook.xlsx.write(res);
-    res.end();
   }
 }

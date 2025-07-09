@@ -70,7 +70,7 @@ export class DebtService {
         contract: {
           include: {
             partner: true,
-            product: true,
+            products: true,
             user: true,
           },
         },

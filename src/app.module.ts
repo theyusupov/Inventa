@@ -17,7 +17,7 @@ import { ActionHistoryModule } from './action-history/action-history.module';
 import { ImageModule } from './image/image.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, PartnerModule, CategoryModule, ProductModule, PurchaseModule, ContractModule, DebtModule, ReasonModule, ProductReturnModule, PaymentModule, SalaryModule, ActionHistoryModule, ImageModule],
+  imports: [PrismaModule, UserModule, DebtModule, PartnerModule, CategoryModule, ProductModule, PurchaseModule, ContractModule, ReasonModule, ProductReturnModule, PaymentModule, SalaryModule, ActionHistoryModule, ImageModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -16,6 +16,17 @@ export class PaymentService {
     const partner = await this.prisma.partner.findUnique({ where: { id: partnerId } });
     if (!partner) throw new BadRequestException('Partner not found');
 
+    let debt; 
+     if(debtId){
+        debt = await this.prisma.debt.findUnique({ where: { id: debtId } });
+        if (!debt) throw new BadRequestException('Debt not found');
+     }
+
+    if(partner.role==='CUSTOMER'&&amount> debt.total){
+      throw new BadRequestException(`Your debt is less than ${amount}`);
+    }
+
+
     if (
       (type === 'OUT' && partner.role === 'CUSTOMER') ||
       (type === 'IN' && partner.role === 'SELLER')
@@ -200,7 +211,7 @@ async exportToExcel(res: Response) {
         include: {
           contract: {
             include: {
-              product: true,
+              // product: true,
               partner: true,
             },
           },
@@ -240,7 +251,7 @@ async exportToExcel(res: Response) {
       payment.paymentType,
       payment.type,
       payment.debtId ?? '—',
-      payment.debt?.contract?.product?.name || '—',
+      // payment.debt?.contract?.product?.name || '—',
       payment.debt?.contract?.partner?.fullName || '—',
       payment.user?.fullName || '—',
       payment.createdAt?.toISOString().split('T')[0],

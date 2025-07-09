@@ -127,6 +127,8 @@ export class PartnerService {
         lng: loc.lng,
       }));
 
+    if(dto.balance) throw new BadRequestException("You can't update partners balance")
+
     const updated = await this.prisma.partner.update({
       where: { id },
       data: { ...dto, updatedAt: new Date(), location: mappedLocation  },

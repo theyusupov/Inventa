@@ -15,7 +15,6 @@ datasource db {
 }
 
 
-
 enum UserRole {
   OWNER
   STAFF
@@ -57,12 +56,10 @@ enum Region {
   Toshkent
 }
 
-
 enum Type {
   IN
   OUT
 }
-
 
 enum ActionType {
   REJECT
@@ -75,13 +72,11 @@ enum ActionType {
   RESET_PASSWORD
 }
 
-
 enum ContractStatus {
   ONGOING       
   CANCELLED      
   COMPLETED      
 }
-
 
 model User {
   id           String @id @default(uuid())
@@ -105,9 +100,6 @@ model User {
   productActionHistories  ActionHistory[]
 }
 
-
-
-
 model Partner {
   id           String @id @default(uuid())
   fullName     String
@@ -128,8 +120,6 @@ model Partner {
   purchases    Purchase[]
   contracts    Contract[]
   payments     Payment[]
-
-
 }
 
 
@@ -168,9 +158,9 @@ model Product {
   user         User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-
   purchases                Purchase[]
-  contracts                Contract[]
+  products          ContractProduct[]
+
 }
 
 
@@ -193,27 +183,34 @@ model Purchase {
 
 
 model Contract {
-  id                String @id @default(uuid()) 
-  quantity          Int
-  sellPrice         Int
+  id                String   @id @default(uuid()) 
   repaymentPeriod   Int
-  startTotal        Int?
-  monthlyPayment    Int?
-  productId         String
   partnerId         String
   userId            String?
-  status       ContractStatus?
-  createdAt    DateTime? @default(now())
-  updatedAt    DateTime? 
- 
+  status            ContractStatus?
+  startTotal        Int?
+  createdAt         DateTime? @default(now())
+  updatedAt         DateTime?
+  
+  partner           Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  user              User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user       User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-  partner    Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  debts      Debt[]
-  returns    ProductReturn[]              
+  products          ContractProduct[] 
+  debts             Debt[]
+  returns           ProductReturn[]
 }
+
+model ContractProduct {
+  id          String   @id @default(uuid())
+  contractId  String
+  productId   String
+  quantity    Int
+  sellPrice   Int
+
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
 
 
 
@@ -237,7 +234,6 @@ model Reason {
   updatedAt    DateTime?
 
   returns           ProductReturn[]
-
 }
 
 

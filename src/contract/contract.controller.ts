@@ -25,11 +25,20 @@ export class ContractController {
       example1: {
         summary: 'Basic Contract Creation',
         value: {
-          quantity: 4,
-          sellPrice:1000,
-          repaymentPeriod: 6,
-          productId: 'product-uuid',
-          partnerId: 'partner-uuid'        
+          partnerId: 'partner-uuid',
+          repaymentPeriod:4,
+          products: [
+            {
+              productId: 'product-uuid-1',
+              quantity: 4,
+              sellPrice: 1000,
+            },
+            {
+              productId: 'product-uuid-2',
+              quantity: 2,
+              sellPrice: 1500,
+            },
+          ],
         },
       },
     },
@@ -38,6 +47,7 @@ export class ContractController {
     const userId = req.user.id;
     return this.contractService.create(dto, userId);
   }
+
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
@@ -72,24 +82,35 @@ export class ContractController {
   @UseGuards(JwtAuthGuard)
   @Roles([UserRole.STAFF])
   @Patch(':id')
-  @ApiOperation({ summary: 'Update contract and recalculate totals' })
+  @ApiOperation({ summary: 'Update a contract' })
   @ApiBody({
-    type: CreateContractDto, 
+    type: CreateContractDto,
     examples: {
-      updatePriceOnly: {
-        summary: 'Update only sell price',
+      example1: {
+        summary: 'Update Contract Example',
         value: {
-          sellPrice: 600       
-         },
+          partnerId: 'partner-uuid',
+          repaymentPeriod: 6,
+          products: [
+            {
+              productId: 'product-uuid-1',
+              quantity: 3,
+              sellPrice: 1200,
+            },
+            {
+              productId: 'product-uuid-2',
+              quantity: 1,
+              sellPrice: 1500,
+            },
+          ],
+        },
       },
     },
   })
-  update(@Param('id') id: string, @Body() dto: Partial<CreateContractDto>, @Request() req) {
+    update(@Param('id') contractId: string, @Body() dto: CreateContractDto, @Request() req,) {
     const userId = req.user.id;
-    return this.contractService.update(id, dto, userId);
+    return this.contractService.update(dto,contractId, userId);
   }
-
-
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
@@ -100,13 +121,6 @@ export class ContractController {
     return this.contractService.remove(id, userId);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('export/excel')
-  @ApiOperation({ summary: 'Export contracts to Excel' })
-  @ApiResponse({ status: 200, description: 'Excel fayl yuklab olinadi' })
-  exportExcel(@Res() res: Response) {
-    return this.contractService.exportToExcel(res);
-  }
 
 }
  
