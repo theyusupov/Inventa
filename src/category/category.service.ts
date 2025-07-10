@@ -92,7 +92,6 @@ export class CategoryService {
     };
   }
 
-
   async update(
     id: string,
     dto: Partial<CreateCategoryDto>,
@@ -105,9 +104,7 @@ export class CategoryService {
 
     let updatedImage = oldCategory.image;
 
-    // Agar dto.image berilgan bo‘lsa va eski rasmga teng bo‘lmasa
     if (dto.image && dto.image !== oldCategory.image) {
-      // Eski rasm faylini o‘chirish
       const filePath = path.join(__dirname, '../../images', oldCategory.image);
       try {
         await fs.unlink(filePath);
@@ -143,7 +140,6 @@ export class CategoryService {
       category: updatedCategory,
     };
   }
-
 
   async remove(id: string, userId: string) {
     const oldCategory = await this.prisma.category.findUnique({ where: { id } });

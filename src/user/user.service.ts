@@ -236,65 +236,65 @@ export class UserService {
     return { message: 'User deleted successfully' };
   }
 
- async exportToExcel(res: Response) {
-    const users = await this.prisma.user.findMany({
-      include: {
-        partners: true,
-        products: true,
-        contracts: true,
-        payments: true,
-        salaries: true,
-      },
-    });
+  async exportToExcel(res: Response) {
+      const users = await this.prisma.user.findMany({
+        include: {
+          partners: true,
+          products: true,
+          contracts: true,
+          payments: true,
+          salaries: true,
+        },
+      });
 
-    if (!users.length) throw new NotFoundException('No users found');
+      if (!users.length) throw new NotFoundException('No users found');
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Users');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Users');
 
-    worksheet.addRow([
-      '№',
-      'Full Name',
-      'Phone Number',
-      'Email',
-      'Balance',
-      'Role',
-      'Active',
-      'Image',
-      'Created At',
-      'Updated At',
-      'Products',
-      'Contracts',
-      'Payments',
-      'Salaries',
-    ]);
-
-    users.forEach((user, index) => {
       worksheet.addRow([
-        index + 1,
-        user.fullName,
-        user.phoneNumbers,
-        user.email,
-        user.balance,
-        user.role,
-        user.isActive ? 'Yes' : 'No',
-        user.image,
-        user.createdAt?.toISOString().split('T')[0] || '',
-        user.updatedAt?.toISOString().split('T')[0] || '',
-        user.products.length,
-        user.contracts.length,
-        user.payments.length,
-        user.salaries.length,
+        '№',
+        'Full Name',
+        'Phone Number',
+        'Email',
+        'Balance',
+        'Role',
+        'Active',
+        'Image',
+        'Created At',
+        'Updated At',
+        'Products',
+        'Contracts',
+        'Payments',
+        'Salaries',
       ]);
-    });
 
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    );
-    res.setHeader('Content-Disposition', 'attachment; filename=users.xlsx');
+      users.forEach((user, index) => {
+        worksheet.addRow([
+          index + 1,
+          user.fullName,
+          user.phoneNumbers,
+          user.email,
+          user.balance,
+          user.role,
+          user.isActive ? 'Yes' : 'No',
+          user.image,
+          user.createdAt?.toISOString().split('T')[0] || '',
+          user.updatedAt?.toISOString().split('T')[0] || '',
+          user.products.length,
+          user.contracts.length,
+          user.payments.length,
+          user.salaries.length,
+        ]);
+      });
 
-    await workbook.xlsx.write(res);
-    res.end();
-  }
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader('Content-Disposition', 'attachment; filename=users.xlsx');
+
+      await workbook.xlsx.write(res);
+      res.end();
+    }
 }

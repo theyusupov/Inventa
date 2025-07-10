@@ -8,99 +8,97 @@ import * as fs from 'fs/promises';
 import { Response } from 'express';
 import * as ExcelJS from 'exceljs';
 
-
 @Injectable()
 export class ProductService {
   constructor(private readonly prisma: PrismaService) {}
 
-async create(createProductDto: CreateProductDto, userId: string) {
-  const user = await this.prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new BadRequestException('User not found');
+  async create(createProductDto: CreateProductDto, userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
 
-  const category = await this.prisma.category.findUnique({
-    where: { id: createProductDto.categoryId },
-  });
-  if (!category) throw new BadRequestException('Category not found');
-
-  let partner:  any = null;
-  let oldBalance = 0;
-
-  if (createProductDto.partnerId) {
-    if(!createProductDto.quantity|| createProductDto.quantity===0)  throw new BadRequestException('If you enter partnerId quantity should be bigger than 0');
-    partner = await this.prisma.partner.findUnique({
-      where: { id: createProductDto.partnerId },
+    const category = await this.prisma.category.findUnique({
+      where: { id: createProductDto.categoryId },
     });
-    if (!partner) {
-      throw new BadRequestException('Partner not found');
+    if (!category) throw new BadRequestException('Category not found');
+
+    let partner:  any = null;
+    let oldBalance = 0;
+
+    if (createProductDto.partnerId) {
+      if(!createProductDto.quantity|| createProductDto.quantity===0)  throw new BadRequestException('If you enter partnerId quantity should be bigger than 0');
+      partner = await this.prisma.partner.findUnique({
+        where: { id: createProductDto.partnerId },
+      });
+      if (!partner) {
+        throw new BadRequestException('Partner not found');
+      }
+      if (partner.role !== 'SELLER') {
+        throw new BadRequestException('Role of the partner is customer');
+      }
+
+      oldBalance = partner.balance;
     }
-    if (partner.role !== 'SELLER') {
-      throw new BadRequestException('Role of the partner is customer');
-    }
 
-    oldBalance = partner.balance;
-  }
+    const newSellPrice =
+      createProductDto.sellPrice ??
+      createProductDto.buyPrice + (30 * createProductDto.buyPrice) / 100;
 
-  const newSellPrice =
-    createProductDto.sellPrice ??
-    createProductDto.buyPrice + (30 * createProductDto.buyPrice) / 100;
-
-  const product = await this.prisma.product.create({
-    data: {
-      name: createProductDto.name,
-      buyPrice: createProductDto.buyPrice,
-      unit: createProductDto.unit,
-      description: createProductDto.description,
-      image: createProductDto.image,
-      comment: createProductDto.comment,
-      categoryId: createProductDto.categoryId,
-      sellPrice: newSellPrice,
-      quantity: createProductDto.quantity ?? 0,
-      isActive: (createProductDto.quantity ?? 0) > 0,
-      userId,
-    },
-  });
-
-   if ((createProductDto.quantity ?? 0) > 0 && !createProductDto.partnerId){
-      throw new BadRequestException("PartnerId is required if quantity is greater than 0");
-   }
-
-  if ((createProductDto.quantity ?? 0) > 0) {
-    const purchase = await this.prisma.purchase.create({
+    const product = await this.prisma.product.create({
       data: {
-        quantity: createProductDto.quantity,
+        name: createProductDto.name,
         buyPrice: createProductDto.buyPrice,
+        unit: createProductDto.unit,
+        description: createProductDto.description,
+        image: createProductDto.image,
         comment: createProductDto.comment,
+        categoryId: createProductDto.categoryId,
+        sellPrice: newSellPrice,
+        quantity: createProductDto.quantity ?? 0,
+        isActive: (createProductDto.quantity ?? 0) > 0,
         userId,
-        partnerId: createProductDto.partnerId ?? null,
-        productId: product.id,
       },
     });
 
-    if (partner) {
-      await this.prisma.partner.update({
-        where: { id: partner.id },
+    if ((createProductDto.quantity ?? 0) > 0 && !createProductDto.partnerId){
+        throw new BadRequestException("PartnerId is required if quantity is greater than 0");
+    }
+
+    if ((createProductDto.quantity ?? 0) > 0) {
+      const purchase = await this.prisma.purchase.create({
         data: {
-          balance:
-            oldBalance + purchase.quantity * purchase.buyPrice,
+          quantity: createProductDto.quantity,
+          buyPrice: createProductDto.buyPrice,
+          comment: createProductDto.comment,
+          userId,
+          partnerId: createProductDto.partnerId ?? null,
+          productId: product.id,
         },
       });
+
+      if (partner) {
+        await this.prisma.partner.update({
+          where: { id: partner.id },
+          data: {
+            balance:
+              oldBalance + purchase.quantity * purchase.buyPrice,
+          },
+        });
+      }
     }
+
+    await this.prisma.actionHistory.create({
+      data: {
+        tableName: 'product',
+        recordId: product.id,
+        actionType: 'CREATE',
+        newValue: product,
+        userId,
+        comment: 'Product created',
+      },
+    });
+
+    return { message: 'Product created successfully', product };
   }
-
-  await this.prisma.actionHistory.create({
-    data: {
-      tableName: 'product',
-      recordId: product.id,
-      actionType: 'CREATE',
-      newValue: product,
-      userId,
-      comment: 'Product created',
-    },
-  });
-
-  return { message: 'Product created successfully', product };
-}
-
 
   async findAll(params: {
     search?: string;

@@ -119,8 +119,6 @@ export class CategoryController {
     return this.categoryService.update(id, dto, userId);
   }
 
-
-
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Delete(':id')

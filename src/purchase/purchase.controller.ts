@@ -79,7 +79,6 @@ export class PurchaseController {
     });
   }
 
-
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get(':id')
@@ -98,7 +97,6 @@ export class PurchaseController {
     const userId = req.user.id;
     return this.purchaseService.remove(id, userId);
   }
-
 
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])

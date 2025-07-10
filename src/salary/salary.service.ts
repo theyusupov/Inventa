@@ -9,6 +9,7 @@ import * as ExcelJS from 'exceljs';
 @Injectable()
 export class SalaryService {
   constructor(private readonly prisma: PrismaService) {}
+  
 
   async create(dto: CreateSalaryDto, userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });

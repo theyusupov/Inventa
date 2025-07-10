@@ -202,69 +202,69 @@ export class PaymentService {
     return { message: 'Payment deleted successfully' };
   }
 
-async exportToExcel(res: Response) {
-  const payments = await this.prisma.payment.findMany({
-    include: {
-      partner: true,
-      user: true,
-      debt: {
-        include: {
-          contract: {
-            include: {
-              // product: true,
-              partner: true,
+  async exportToExcel(res: Response) {
+    const payments = await this.prisma.payment.findMany({
+      include: {
+        partner: true,
+        user: true,
+        debt: {
+          include: {
+            contract: {
+              include: {
+                products: true,
+                partner: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Payments');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Payments');
 
-  worksheet.addRow([
-    '№',
-    'Payment ID',
-    'Partner Name',
-    'Partner Role',
-    'Amount',
-    'Comment',
-    'Months Paid',
-    'Payment Type',
-    'Type',
-    'Debt ID',
-    'Contract Product',
-    'Contract Partner',
-    'User',
-    'Created At',
-  ]);
-
-  payments.forEach((payment, index) => {
     worksheet.addRow([
-      index + 1,
-      payment.id,
-      payment.partner?.fullName || '—',
-      payment.partner?.role || '—',
-      payment.amount,
-      payment.comment,
-      payment.paymentType,
-      payment.type,
-      payment.debtId ?? '—',
-      // payment.debt?.contract?.product?.name || '—',
-      payment.debt?.contract?.partner?.fullName || '—',
-      payment.user?.fullName || '—',
-      payment.createdAt?.toISOString().split('T')[0],
+      '№',
+      'Payment ID',
+      'Partner Name',
+      'Partner Role',
+      'Amount',
+      'Comment',
+      'Months Paid',
+      'Payment Type',
+      'Type',
+      'Debt ID',
+      'Contract Product',
+      'Contract Partner',
+      'User',
+      'Created At',
     ]);
-  });
 
-  res.setHeader(
-    'Content-Type',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  );
-  res.setHeader('Content-Disposition', 'attachment; filename=payments.xlsx');
+    payments.forEach((payment, index) => {
+      worksheet.addRow([
+        index + 1,
+        payment.id,
+        payment.partner?.fullName || '—',
+        payment.partner?.role || '—',
+        payment.amount,
+        payment.comment,
+        payment.paymentType,
+        payment.type,
+        payment.debtId ?? '—',
+        // payment.debt?.contract?.product?.name || '—',
+        payment.debt?.contract?.partner?.fullName || '—',
+        payment.user?.fullName || '—',
+        payment.createdAt?.toISOString().split('T')[0],
+      ]);
+    });
 
-  await workbook.xlsx.write(res);
-  res.end();
-}
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=payments.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  }
 }

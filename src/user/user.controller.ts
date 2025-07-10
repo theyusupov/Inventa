@@ -144,7 +144,4 @@ export class UserController {
     return this.userService.exportToExcel(res);
   }
 
-
-
-
 }

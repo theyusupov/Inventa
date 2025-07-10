@@ -120,7 +120,5 @@ export class ContractController {
     const userId = req.user.id;
     return this.contractService.remove(id, userId);
   }
-
-
 }
  

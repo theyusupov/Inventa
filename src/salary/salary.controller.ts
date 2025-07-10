@@ -80,7 +80,6 @@ export class SalaryController {
     });
   }
 
-
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.OWNER,  UserRole.STAFF])
   @Get(':id')

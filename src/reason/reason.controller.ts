@@ -78,7 +78,6 @@ export class ReasonController {
     });
   }
 
-
   @UseGuards(JwtAuthGuard, JwtRoleGuard)
   @Roles([UserRole.STAFF, UserRole.OWNER])
   @Get(':id')
