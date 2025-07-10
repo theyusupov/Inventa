@@ -39,7 +39,6 @@ export class CategoryController {
         summary: 'Electronics',
         value: {
           name: 'Electronics',
-          repaymentPeriod: 3,
           image: '12333497328.png'
         },
       },
@@ -47,7 +46,6 @@ export class CategoryController {
         summary: 'Clothes',
         value: {
           name: 'Clothes',
-          repaymentPeriod: 2,
           image: '12333497328.png'
         },
       },
@@ -96,7 +94,6 @@ export class CategoryController {
         summary: 'Electronics',
         value: {
           name: 'Electronics',
-          repaymentPeriod: 3,
           image: '12333497328.png'
         },
       },
@@ -104,7 +101,6 @@ export class CategoryController {
         summary: 'Clothes',
         value: {
           name: 'Clothes',
-          repaymentPeriod: 2,
           image: '12333497328.png'
         },
       },

@@ -122,22 +122,15 @@ model Partner {
   payments     Payment[]
 }
 
-
-
-
 model Category {
   id              String @id @default(uuid())
   name            String 
   image           String
-  repaymentPeriod Int
   createdAt       DateTime? @default(now())
   updatedAt       DateTime?
 
   products        Product[]
 }
-
-
-
 
 model Product {
   id           String @id @default(uuid())
@@ -163,7 +156,6 @@ model Product {
 
 }
 
-
 model Purchase {
   id         String @id @default(uuid()) 
   quantity   Int
@@ -180,7 +172,6 @@ model Purchase {
   product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
 }
-
 
 model Contract {
   id                String   @id @default(uuid()) 
@@ -211,9 +202,6 @@ model ContractProduct {
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
-
-
-
 model Debt {
   id                String @id @default(uuid()) 
   total             Int
@@ -226,7 +214,6 @@ model Debt {
   payments   Payment[]
 }
 
-
 model Reason {
   id                String @id @default(uuid()) 
   reasonText        String
@@ -235,7 +222,6 @@ model Reason {
 
   returns           ProductReturn[]
 }
-
 
 model ProductReturn {
   id                String @id @default(uuid()) 
@@ -249,7 +235,6 @@ model ProductReturn {
   reason            Reason @relation(fields: [reasonId], references: [id], onDelete: Cascade)
   contract          Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
-
 
 model Payment {
   id                String @id @default(uuid()) 
@@ -268,8 +253,6 @@ model Payment {
   user          User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-
-
 model Salary {
   id                String @id @default(uuid()) 
   amount            Int
@@ -280,8 +263,6 @@ model Salary {
 
   user          User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-
 
 model ActionHistory {
   id           String      @id @default(uuid())

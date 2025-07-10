@@ -5,10 +5,6 @@ export class CreateCategoryDto {
   @IsNotEmpty()
   name: string;
 
-  @IsInt()
-  @IsNotEmpty()
-  repaymentPeriod: number;
-
   @IsString()
   @IsNotEmpty()
   image: string;
