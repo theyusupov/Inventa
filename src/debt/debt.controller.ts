@@ -19,6 +19,7 @@ import { Roles } from 'src/shared/guards/role.decorator';
 import { UserRole } from 'generated/prisma';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 
+
  @ApiTags('Debt')
 @Controller('debt')
 export class DebtController {
